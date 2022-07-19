@@ -118,11 +118,6 @@ type IntersectionNotFound struct {
 	Tip Point
 }
 
-type Collateral struct {
-	Index int    `json:"index" dynamodbav:"index"`
-	TxId  string `json:"txId"  dynamodbav:"tx_id"`
-}
-
 type PointType int
 
 const (
@@ -410,7 +405,7 @@ type Tx struct {
 
 type TxBody struct {
 	Certificates            []json.RawMessage `json:"certificates,omitempty"            dynamodbav:"certificates,omitempty"`
-	Collaterals             []Collateral      `json:"collaterals,omitempty"             dynamodbav:"collaterals,omitempty"`
+	Collaterals             []TxIn            `json:"collaterals,omitempty"             dynamodbav:"collaterals,omitempty"`
 	Fee                     num.Int           `json:"fee,omitempty"                     dynamodbav:"fee,omitempty"`
 	Inputs                  []TxIn            `json:"inputs,omitempty"                  dynamodbav:"inputs,omitempty"`
 	Mint                    *Value            `json:"mint,omitempty"                    dynamodbav:"mint,omitempty"`
