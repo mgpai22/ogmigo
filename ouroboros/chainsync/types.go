@@ -90,9 +90,14 @@ func (a AssetID) PolicyID() string {
 }
 
 type Block struct {
-	Body       []Tx        `json:"body,omitempty"       dynamodbav:"body,omitempty"`
+	Body       []Tx        `json:"body"       dynamodbav:"body"`
 	Header     BlockHeader `json:"header,omitempty"     dynamodbav:"header,omitempty"`
 	HeaderHash string      `json:"headerHash,omitempty" dynamodbav:"headerHash,omitempty"`
+}
+
+type VrfInput struct {
+	Proof  string `json:"proof,omitempty"`
+	Output string `json:"output,omitempty"`
 }
 
 type BlockHeader struct {
@@ -108,6 +113,7 @@ type BlockHeader struct {
 	ProtocolVersion map[string]int         `json:"protocolVersion,omitempty" dynamodbav:"protocolVersion,omitempty"`
 	Signature       string                 `json:"signature,omitempty"       dynamodbav:"signature,omitempty"`
 	Slot            uint64                 `json:"slot,omitempty"            dynamodbav:"slot,omitempty"`
+	VrfInput        *VrfInput              `json:"vrfInput,omitempty"        dynamodbav:"vrfInput,omitempty"`
 }
 
 type IntersectionFound struct {
@@ -406,21 +412,21 @@ type Tx struct {
 
 type TxBody struct {
 	Certificates            []json.RawMessage `json:"certificates,omitempty"            dynamodbav:"certificates,omitempty"`
-	Collaterals             []TxIn            `json:"collaterals,omitempty"             dynamodbav:"collaterals,omitempty"`
-	Fee                     num.Int           `json:"fee,omitempty"                     dynamodbav:"fee,omitempty"`
+	Collaterals             []TxIn            `json:"collaterals"                       dynamodbav:"collaterals,omitempty"`
+	Fee                     num.Int           `json:"fee"                               dynamodbav:"fee,omitempty"`
 	Inputs                  []TxIn            `json:"inputs,omitempty"                  dynamodbav:"inputs,omitempty"`
 	Mint                    *Value            `json:"mint,omitempty"                    dynamodbav:"mint,omitempty"`
 	Network                 json.RawMessage   `json:"network,omitempty"                 dynamodbav:"network,omitempty"`
-	Outputs                 TxOuts            `json:"outputs,omitempty"                 dynamodbav:"outputs,omitempty"`
+	Outputs                 TxOuts            `json:"outputs"                           dynamodbav:"outputs,omitempty"`
 	RequiredExtraSignatures []string          `json:"requiredExtraSignatures,omitempty" dynamodbav:"requiredExtraSignatures,omitempty"`
 	ScriptIntegrityHash     string            `json:"scriptIntegrityHash,omitempty"     dynamodbav:"scriptIntegrityHash,omitempty"`
 	TimeToLive              int64             `json:"timeToLive,omitempty"              dynamodbav:"timeToLive,omitempty"`
 	Update                  json.RawMessage   `json:"update,omitempty"                  dynamodbav:"update,omitempty"`
 	ValidityInterval        ValidityInterval  `json:"validityInterval"                  dynamodbav:"validityInterval,omitempty"`
-	Withdrawals             map[string]int64  `json:"withdrawals,omitempty"             dynamodbav:"withdrawals,omitempty"`
-	CollateralReturn        *TxOut            `json:"collateralReturn,omitempty"        dynamodbav:"collateralReturn,omitempty"`
-	TotalCollateral         *int64            `json:"totalCollateral,omitempty"         dynamodbav:"totalCollateral,omitempty"`
-	References              []TxIn            `json:"references,omitempty"              dynamodbav:"references,omitempty"`
+	Withdrawals             map[string]int64  `json:"withdrawals"                       dynamodbav:"withdrawals,omitempty"`
+	CollateralReturn        *TxOut            `json:"collateralReturn"                  dynamodbav:"collateralReturn,omitempty"`
+	TotalCollateral         *int64            `json:"totalCollateral"                   dynamodbav:"totalCollateral,omitempty"`
+	References              []TxIn            `json:"references"                        dynamodbav:"references,omitempty"`
 }
 
 type TxID string
@@ -545,8 +551,8 @@ func (d *Datums) UnmarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) 
 }
 
 type Witness struct {
-	Bootstrap  []json.RawMessage `json:"bootstrap,omitempty"  dynamodbav:"bootstrap,omitempty"`
-	Datums     Datums            `json:"datums,omitempty"     dynamodbav:"datums,omitempty"`
+	Bootstrap  []json.RawMessage `json:"bootstrap"  dynamodbav:"bootstrap,omitempty"`
+	Datums     Datums            `json:"datums"     dynamodbav:"datums,omitempty"`
 	Redeemers  json.RawMessage   `json:"redeemers,omitempty"  dynamodbav:"redeemers,omitempty"`
 	Scripts    json.RawMessage   `json:"scripts,omitempty"    dynamodbav:"scripts,omitempty"`
 	Signatures map[string]string `json:"signatures,omitempty" dynamodbav:"signatures,omitempty"`
