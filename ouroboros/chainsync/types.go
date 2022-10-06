@@ -112,7 +112,7 @@ type BlockHeader struct {
 	PrevHash        string                 `json:"prevHash,omitempty"        dynamodbav:"prevHash,omitempty"`
 	ProtocolVersion map[string]int         `json:"protocolVersion,omitempty" dynamodbav:"protocolVersion,omitempty"`
 	Signature       string                 `json:"signature,omitempty"       dynamodbav:"signature,omitempty"`
-	Slot            uint64                 `json:"slot,omitempty"            dynamodbav:"slot,omitempty"`
+	Slot            uint64                 `json:"slot"                      dynamodbav:"slot,omitempty"`
 	VrfInput        *VrfInput              `json:"vrfInput,omitempty"        dynamodbav:"vrfInput,omitempty"`
 }
 
@@ -144,9 +144,9 @@ func (p PointString) Point() Point {
 }
 
 type PointStruct struct {
-	BlockNo uint64 `json:"blockNo,omitempty" dynamodbav:"blockNo,omitempty"`
-	Hash    string `json:"hash,omitempty"    dynamodbav:"hash,omitempty"`
-	Slot    uint64 `json:"slot,omitempty"    dynamodbav:"slot,omitempty"`
+	BlockNo uint64 `json:"blockNo" dynamodbav:"blockNo,omitempty"`
+	Hash    string `json:"hash"    dynamodbav:"hash,omitempty"`
+	Slot    uint64 `json:"slot"    dynamodbav:"slot,omitempty"`
 }
 
 func (p PointStruct) Point() Point {
@@ -414,9 +414,9 @@ type TxBody struct {
 	Certificates            []json.RawMessage `json:"certificates,omitempty"            dynamodbav:"certificates,omitempty"`
 	Collaterals             []TxIn            `json:"collaterals"                       dynamodbav:"collaterals,omitempty"`
 	Fee                     num.Int           `json:"fee"                               dynamodbav:"fee,omitempty"`
-	Inputs                  []TxIn            `json:"inputs,omitempty"                  dynamodbav:"inputs,omitempty"`
+	Inputs                  []TxIn            `json:"inputs"                  dynamodbav:"inputs,omitempty"`
 	Mint                    *Value            `json:"mint,omitempty"                    dynamodbav:"mint,omitempty"`
-	Network                 json.RawMessage   `json:"network,omitempty"                 dynamodbav:"network,omitempty"`
+	Network                 json.RawMessage   `json:"network"                 dynamodbav:"network,omitempty"`
 	Outputs                 TxOuts            `json:"outputs"                           dynamodbav:"outputs,omitempty"`
 	RequiredExtraSignatures []string          `json:"requiredExtraSignatures,omitempty" dynamodbav:"requiredExtraSignatures,omitempty"`
 	ScriptIntegrityHash     string            `json:"scriptIntegrityHash,omitempty"     dynamodbav:"scriptIntegrityHash,omitempty"`
