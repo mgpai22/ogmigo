@@ -416,7 +416,7 @@ type TxBody struct {
 	Fee                     num.Int           `json:"fee"                               dynamodbav:"fee,omitempty"`
 	Inputs                  []TxIn            `json:"inputs"                  dynamodbav:"inputs,omitempty"`
 	Mint                    *Value            `json:"mint,omitempty"                    dynamodbav:"mint,omitempty"`
-	Network                 json.RawMessage   `json:"network"                 dynamodbav:"network,omitempty"`
+	Network                 json.RawMessage   `json:"network,omitempty"                 dynamodbav:"network,omitempty"`
 	Outputs                 TxOuts            `json:"outputs"                           dynamodbav:"outputs,omitempty"`
 	RequiredExtraSignatures []string          `json:"requiredExtraSignatures,omitempty" dynamodbav:"requiredExtraSignatures,omitempty"`
 	ScriptIntegrityHash     string            `json:"scriptIntegrityHash,omitempty"     dynamodbav:"scriptIntegrityHash,omitempty"`
