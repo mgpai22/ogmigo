@@ -111,7 +111,7 @@ func TestClient_GenesisConfig(t *testing.T) {
 
 	ctx := context.Background()
 	client := New(WithEndpoint(endpoint), WithLogger(DefaultLogger))
-	params, err := client.GenesisConfig(ctx, shared.ShelleyEra)
+	params, err := client.GenesisConfig(ctx, "shelley")
 	if err != nil {
 		t.Fatalf("got %#v; want nil", err)
 	}

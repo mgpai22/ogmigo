@@ -181,12 +181,14 @@ func (c *CompatibleValue) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	s := shared.Value{}
 	if r5.Coins.BigInt().BitLen() != 0 {
-		shared.Value(*c).AddAsset(shared.Coin{AssetId: shared.AdaAssetID, Amount: r5.Coins})
+		s.AddAsset(shared.Coin{AssetId: shared.AdaAssetID, Amount: r5.Coins})
 	}
 	for asset, coins := range r5.Assets {
-		shared.Value(*c).AddAsset(shared.Coin{AssetId: asset, Amount: coins})
+		s.AddAsset(shared.Coin{AssetId: asset, Amount: coins})
 	}
+	*c = CompatibleValue(s)
 
 	return nil
 }
@@ -213,15 +215,18 @@ type CompatibleResult struct {
 func (c *CompatibleResult) UnmarshalJSON(data []byte) error {
 	var rfi CompatibleResultFindIntersection
 	err := json.Unmarshal(data, &rfi)
+	r := CompatibleResult{}
 	if err == nil {
-		(*c).FindIntersection = &rfi
+		r.FindIntersection = &rfi
+		*c = r
 		return nil
 	}
 
 	var rnb CompatibleResultNextBlock
 	err = json.Unmarshal(data, &rnb)
 	if err == nil {
-		(*c).NextBlock = &rnb
+		r.NextBlock = &rnb
+		*c = r
 		return nil
 	}
 
@@ -230,14 +235,17 @@ func (c *CompatibleResult) UnmarshalJSON(data []byte) error {
 
 func (c *CompatibleResult) UnmarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) error {
 	var rfi CompatibleResultFindIntersection
+	r := CompatibleResult{}
 	if err := dynamodbattribute.Unmarshal(item, &rfi); err != nil {
 		var rnb CompatibleResultNextBlock
 		if err := dynamodbattribute.Unmarshal(item, &rnb); err != nil {
 			return err
 		}
-		*c.NextBlock = rnb
+		r.NextBlock = &rnb
+		*c = r
 		return nil
 	}
-	*c.FindIntersection = rfi
+	r.FindIntersection = &rfi
+	*c = r
 	return nil
 }
