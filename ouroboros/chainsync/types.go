@@ -106,9 +106,9 @@ func (p PointString) Point() Point {
 }
 
 type PointStruct struct {
-	BlockNo uint64 `json:"blockNo,omitempty" dynamodbav:"blockNo,omitempty"` // Not part of RollBackward.
-	ID      string `json:"id,omitempty"      dynamodbav:"id,omitempty"`      // BLAKE2b_256 hash
-	Slot    uint64 `json:"slot,omitempty"    dynamodbav:"slot,omitempty"`
+	Height *uint64 `json:"height,omitempty" dynamodbav:"height,omitempty"` // Not part of RollBackward.
+	ID     string  `json:"id,omitempty"      dynamodbav:"id,omitempty"`    // BLAKE2b_256 hash
+	Slot   uint64  `json:"slot,omitempty"    dynamodbav:"slot,omitempty"`
 }
 
 func (p PointStruct) Point() Point {
@@ -129,10 +129,10 @@ func (p Point) String() string {
 	case PointTypeString:
 		return string(p.pointString)
 	case PointTypeStruct:
-		if p.pointStruct.BlockNo == 0 {
+		if p.pointStruct.Height == nil {
 			return fmt.Sprintf("slot=%v id=%v", p.pointStruct.Slot, p.pointStruct.ID)
 		}
-		return fmt.Sprintf("slot=%v id=%v block=%v", p.pointStruct.Slot, p.pointStruct.ID, p.pointStruct.BlockNo)
+		return fmt.Sprintf("slot=%v id=%v block=%v", p.pointStruct.Slot, p.pointStruct.ID, *p.pointStruct.Height)
 	default:
 		return "invalid point"
 	}
@@ -297,7 +297,7 @@ type ProtocolVersion struct {
 
 type RollBackward struct {
 	Direction string            `json:"direction,omitempty" dynamodbav:"direction,omitempty"`
-	Tip       Tip               `json:"tip,omitempty"   dynamodbav:"tip,omitempty"`
+	Tip       PointStruct       `json:"tip,omitempty"   dynamodbav:"tip,omitempty"`
 	Point     RollBackwardPoint `json:"point,omitempty" dynamodbav:"point,omitempty"`
 }
 
@@ -308,23 +308,23 @@ type RollBackwardPoint struct {
 
 // Assume non-Byron blocks.
 type RollForward struct {
-	Direction string `json:"direction,omitempty" dynamodbav:"direction,omitempty"`
-	Tip       Tip    `json:"tip,omitempty"   dynamodbav:"tip,omitempty"`
-	Block     Block  `json:"block,omitempty" dynamodbav:"block,omitempty"`
+	Direction string      `json:"direction,omitempty" dynamodbav:"direction,omitempty"`
+	Tip       PointStruct `json:"tip,omitempty"   dynamodbav:"tip,omitempty"`
+	Block     Block       `json:"block,omitempty" dynamodbav:"block,omitempty"`
 }
 
 func (b Block) PointStruct() PointStruct {
 	return PointStruct{
-		BlockNo: b.Height,
-		ID:      b.ID,
-		Slot:    b.Slot,
+		Height: &b.Height,
+		ID:     b.ID,
+		Slot:   b.Slot,
 	}
 }
 
 // Covers everything except Byron-era blocks.
 type ResultFindIntersectionPraos struct {
 	Intersection *Point          `json:"intersection,omitempty" dynamodbav:"intersection,omitempty"`
-	Tip          *Tip            `json:"tip,omitempty"          dynamodbav:"tip,omitempty"`
+	Tip          *PointStruct    `json:"tip,omitempty"          dynamodbav:"tip,omitempty"`
 	Error        *ResultError    `json:"error,omitempty"        dynamodbav:"error,omitempty"`
 	ID           json.RawMessage `json:"id,omitempty"           dynamodbav:"id,omitempty"`
 }
@@ -332,26 +332,16 @@ type ResultFindIntersectionPraos struct {
 type ResultError struct {
 	Code    uint32          `json:"code,omitempty"    dynamodbav:"code,omitempty"`
 	Message string          `json:"message,omitempty" dynamodbav:"message,omitempty"`
-	Data    *Tip            `json:"data,omitempty"    dynamodbav:"data,omitempty"` // Forward
+	Data    json.RawMessage `json:"data,omitempty"    dynamodbav:"data,omitempty"` // Forward
 	ID      json.RawMessage `json:"id,omitempty"      dynamodbav:"id,omitempty"`
 }
 
 // Covers all blocks except Byron-era blocks.
 type ResultNextBlockPraos struct {
-	Direction string `json:"direction,omitempty" dynamodbav:"direction,omitempty"`
-	Tip       *Tip   `json:"tip,omitempty"       dynamodbav:"tip,omitempty"`
-	Block     *Block `json:"block,omitempty"     dynamodbav:"block,omitempty"` // Forward
-	Point     *Point `json:"point,omitempty"     dynamodbav:"point,omitempty"` // Backward
-}
-
-type Tip struct {
-	Slot   uint64 `json:"slot,omitempty"   dynamodbav:"slot,omitempty"`
-	ID     string `json:"id,omitempty"     dynamodbav:"id,omitempty"`
-	Height uint64 `json:"height,omitempty" dynamodbav:"height,omitempty"`
-}
-
-func (t Tip) String() string {
-	return fmt.Sprintf("slot=%v id=%v height=%v", t.Slot, t.ID, t.Height)
+	Direction string       `json:"direction,omitempty" dynamodbav:"direction,omitempty"`
+	Tip       *PointStruct `json:"tip,omitempty"       dynamodbav:"tip,omitempty"`
+	Block     *Block       `json:"block,omitempty"     dynamodbav:"block,omitempty"` // Forward
+	Point     *Point       `json:"point,omitempty"     dynamodbav:"point,omitempty"` // Backward
 }
 
 type ResponsePraos struct {

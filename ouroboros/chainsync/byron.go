@@ -64,13 +64,13 @@ type ByronProtocol struct {
 type ResultByronEBB struct {
 	Direction string         `json:"direction,omitempty" dynamodbav:"direction,omitempty"`
 	Block     *ByronBlockEBB `json:"block,omitempty"     dynamodbav:"block,omitempty"`
-	Tip       *Tip           `json:"tip,omitempty"       dynamodbav:"tip,omitempty"`
+	Tip       *PointStruct   `json:"tip,omitempty"       dynamodbav:"tip,omitempty"`
 }
 
 type ResultByronBFT struct {
 	Direction string         `json:"direction,omitempty" dynamodbav:"direction,omitempty"`
 	Block     *ByronBlockBFT `json:"block,omitempty"     dynamodbav:"block,omitempty"`
-	Tip       *Tip           `json:"tip,omitempty"       dynamodbav:"tip,omitempty"`
+	Tip       *PointStruct   `json:"tip,omitempty"       dynamodbav:"tip,omitempty"`
 }
 
 type ResponseByronEBB struct {

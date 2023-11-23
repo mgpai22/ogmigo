@@ -148,10 +148,11 @@ func TestPoint_CBOR(t *testing.T) {
 	})
 
 	t.Run("struct", func(t *testing.T) {
+		h := uint64(123)
 		want := &PointStruct{
-			BlockNo: 123,
-			ID:      "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
-			Slot:    456,
+			Height: &h,
+			ID:     "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+			Slot:   456,
 		}
 		item, err := cbor.Marshal(want.Point())
 		if err != nil {
@@ -202,10 +203,11 @@ func TestPoint_DynamoDB(t *testing.T) {
 	})
 
 	t.Run("struct", func(t *testing.T) {
+		h := uint64(123)
 		want := &PointStruct{
-			BlockNo: 123,
-			ID:      "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
-			Slot:    456,
+			Height: &h,
+			ID:     "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+			Slot:   456,
 		}
 		item, err := dynamodbattribute.Marshal(want.Point())
 		if err != nil {
@@ -258,10 +260,11 @@ func TestPoint_JSON(t *testing.T) {
 	})
 
 	t.Run("struct", func(t *testing.T) {
+		h := uint64(123)
 		want := &PointStruct{
-			BlockNo: 123,
-			ID:      "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
-			Slot:    456,
+			Height: &h,
+			ID:     "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+			Slot:   456,
 		}
 		data, err := json.Marshal(want.Point())
 		if err != nil {

@@ -35,11 +35,11 @@ var (
 
 type IntersectionFound struct {
 	Point PointV5
-	Tip   TipV5
+	Tip   PointStructV5
 }
 
 type IntersectionNotFound struct {
-	Tip TipV5
+	Tip PointStructV5
 }
 
 // Use V5 materials only for JSON backwards compatibility.
@@ -275,10 +275,14 @@ func (p PointStructV5) Point() PointV5 {
 }
 
 func (p PointStructV5) ConvertToV6() chainsync.PointStruct {
+	var bn *uint64
+	if p.BlockNo != 0 {
+		bn = &p.BlockNo
+	}
 	return chainsync.PointStruct{
-		BlockNo: p.BlockNo,
-		ID:      p.Hash,
-		Slot:    p.Slot,
+		Height: bn,
+		ID:     p.Hash,
+		Slot:   p.Slot,
 	}
 }
 
@@ -309,6 +313,32 @@ func (p PointV5) ConvertToV6() chainsync.Point {
 	}
 
 	return p6
+}
+
+func FromV6(p chainsync.Point) *PointV5 {
+	var p5 PointV5
+	if p.PointType() == chainsync.PointTypeString {
+		ps, _ := p.PointString()
+		p5 = PointV5{
+			pointType:   chainsync.PointTypeString,
+			pointString: ps,
+		}
+	} else {
+		ps, _ := p.PointStruct()
+		bn := uint64(0)
+		if ps.Height != nil {
+			bn = *ps.Height
+		}
+		p5 = PointV5{
+			pointType: chainsync.PointTypeStruct,
+			pointStruct: &PointStructV5{
+				BlockNo: bn,
+				Hash:    ps.ID,
+				Slot:    ps.Slot,
+			},
+		}
+	}
+	return &p5
 }
 
 type PointsV5 []PointV5
@@ -443,7 +473,8 @@ func (r ResultFindIntersectionV5) ConvertToV6() chainsync.ResultFindIntersection
 	} else if r.IntersectionNotFound != nil {
 		// Emulate the v6 IntersectionNotFound error as best as possible.
 		tip := r.IntersectionNotFound.Tip.ConvertToV6()
-		err := chainsync.ResultError{Code: 1000, Message: "Intersection not found", Data: &tip}
+		tipRaw, _ := json.Marshal(&tip)
+		err := chainsync.ResultError{Code: 1000, Message: "Intersection not found", Data: tipRaw}
 		rfi.Error = &err
 	}
 
@@ -451,8 +482,8 @@ func (r ResultFindIntersectionV5) ConvertToV6() chainsync.ResultFindIntersection
 }
 
 type RollBackwardV5 struct {
-	Point PointV5 `json:"point,omitempty" dynamodbav:"point,omitempty"`
-	Tip   TipV5   `json:"tip,omitempty"   dynamodbav:"tip,omitempty"`
+	Point PointV5       `json:"point,omitempty" dynamodbav:"point,omitempty"`
+	Tip   PointStructV5 `json:"tip,omitempty"   dynamodbav:"tip,omitempty"`
 }
 
 type RollForwardBlockV5 struct {
@@ -575,7 +606,7 @@ func (b RollForwardBlockV5) ConvertToV6() (chainsync.Block, error) {
 
 type RollForwardV5 struct {
 	Block RollForwardBlockV5 `json:"block,omitempty" dynamodbav:"block,omitempty"`
-	Tip   TipV5              `json:"tip,omitempty"   dynamodbav:"tip,omitempty"`
+	Tip   PointStructV5      `json:"tip,omitempty"   dynamodbav:"tip,omitempty"`
 }
 
 type ResultNextBlockV5 struct {
@@ -607,25 +638,11 @@ func (r ResultNextBlockV5) ConvertToV6() chainsync.ResultNextBlockPraos {
 
 type IntersectionFoundV5 struct {
 	Point *PointV5
-	Tip   *TipV5
+	Tip   *PointStructV5
 }
 
 type IntersectionNotFoundV5 struct {
-	Tip *TipV5
-}
-
-type TipV5 struct {
-	Slot    uint64 `json:"slot,omitempty"    dynamodbav:"slot,omitempty"`
-	Hash    string `json:"hash,omitempty"    dynamodbav:"hash,omitempty"`
-	BlockNo uint64 `json:"blockNo,omitempty" dynamodbav:"blockNo,omitempty"`
-}
-
-func (t TipV5) ConvertToV6() chainsync.Tip {
-	return chainsync.Tip{
-		Slot:   t.Slot,
-		ID:     t.Hash,
-		Height: t.BlockNo,
-	}
+	Tip *PointStructV5
 }
 
 type ResponseV5 struct {
@@ -654,8 +671,9 @@ func (r ResponseV5) ConvertToV6() chainsync.ResponsePraos {
 	} else if r.Result.IntersectionNotFound != nil {
 		c.Method = chainsync.FindIntersectionMethod
 		t := r.Result.IntersectionNotFound.Tip.ConvertToV6()
+		tRaw, _ := json.Marshal(&t)
 		var e chainsync.ResultError
-		e.Data = &t
+		e.Data = tRaw
 		e.Code = 1000
 		e.Message = "Intersection not found - Conversion from a v5 Ogmigo call"
 		c.Error = &e
@@ -676,10 +694,12 @@ func (r ResponseV5) ConvertToV6() chainsync.ResponsePraos {
 		c.Result = &nextBlock
 	} else if r.Result.RollBackward != nil {
 		c.Method = chainsync.NextBlockMethod
-		var t chainsync.Tip
+		var t chainsync.PointStruct
 		t.Slot = r.Result.RollBackward.Tip.Slot
 		t.ID = r.Result.RollBackward.Tip.Hash
-		t.Height = r.Result.RollBackward.Tip.BlockNo
+		if r.Result.RollBackward.Tip.BlockNo != 0 {
+			t.Height = &r.Result.RollBackward.Tip.BlockNo
+		}
 
 		p := r.Result.RollBackward.Point.ConvertToV6()
 		var nextBlock chainsync.ResultNextBlockPraos

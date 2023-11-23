@@ -110,14 +110,14 @@ func (m mockStore) Load(context.Context) (chainsync.Points, error) {
 func Test_getInit(t *testing.T) {
 	ctx := context.Background()
 	p1 := chainsync.PointStruct{
-		BlockNo: 123,
-		ID:      "hash",
-		Slot:    456,
+		Height: nil,
+		ID:     "hash",
+		Slot:   456,
 	}
 	p2 := chainsync.PointStruct{
-		BlockNo: 321,
-		ID:      "hash",
-		Slot:    654,
+		Height: nil,
+		ID:     "hash",
+		Slot:   654,
 	}
 
 	t.Run("from store", func(t *testing.T) {
@@ -129,7 +129,7 @@ func Test_getInit(t *testing.T) {
 			t.Fatalf("got %v; want nil", err)
 		}
 
-		want := `{"id":{"step":"INIT"},"jsonrpc":"2.0","method":"findIntersection","params":{"points":[{"blockNo":123,"id":"hash","slot":456}]}}`
+		want := `{"id":{"step":"INIT"},"jsonrpc":"2.0","method":"findIntersection","params":{"points":[{"id":"hash","slot":456}]}}`
 		assert.EqualValues(t, string(points), want)
 	})
 
@@ -140,7 +140,7 @@ func Test_getInit(t *testing.T) {
 			t.Fatalf("got %v; want nil", err)
 		}
 
-		want := `{"id":{"step":"INIT"},"jsonrpc":"2.0","method":"findIntersection","params":{"points":[{"blockNo":123,"id":"hash","slot":456}]}}`
+		want := `{"id":{"step":"INIT"},"jsonrpc":"2.0","method":"findIntersection","params":{"points":[{"id":"hash","slot":456}]}}`
 		assert.EqualValues(t, string(points), want)
 	})
 }

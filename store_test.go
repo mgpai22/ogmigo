@@ -8,10 +8,11 @@ import (
 )
 
 func TestNewLoggingStore(t *testing.T) {
+	h := uint64(123)
 	p := chainsync.PointStruct{
-		BlockNo: 123,
-		ID:      "hash",
-		Slot:    456,
+		Height: &h,
+		ID:     "hash",
+		Slot:   456,
 	}
 
 	ctx := context.Background()

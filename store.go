@@ -46,7 +46,9 @@ func (l *loggingStore) Save(_ context.Context, point chainsync.Point) error {
 	var kvs []KeyValue
 	if ps, ok := point.PointStruct(); ok {
 		kvs = append(kvs, KV("slot", strconv.FormatUint(ps.Slot, 10)))
-		kvs = append(kvs, KV("block", strconv.FormatUint(ps.BlockNo, 10)))
+		if ps.Height != nil {
+			kvs = append(kvs, KV("block", strconv.FormatUint(*ps.Height, 10)))
+		}
 		kvs = append(kvs, KV("id", ps.ID))
 	}
 	l.logger.Info("save point", kvs...)
