@@ -29,12 +29,13 @@ import (
 // Support findIntersect (v6) / FindIntersection (v5) universally.
 type CompatibleResultFindIntersection chainsync.ResultFindIntersectionPraos
 
+// Deserialize either v5 or v6 values
 func (c *CompatibleResultFindIntersection) UnmarshalJSON(data []byte) error {
 	// Assume v6 responses first, then fall back to manual v5 processing.
 	var r chainsync.ResultFindIntersectionPraos
 	err := json.Unmarshal(data, &r)
 	// We check intersection here, as that key is distinct from the other result types
-	if err == nil && r.Intersection != nil {
+	if err == nil && (r.Intersection != nil || r.Error != nil) {
 		*c = CompatibleResultFindIntersection(r)
 		return nil
 	}
@@ -47,6 +48,35 @@ func (c *CompatibleResultFindIntersection) UnmarshalJSON(data []byte) error {
 	} else {
 		return fmt.Errorf("unable to parse as either v5 or v6 FindIntersection: %w", err)
 	}
+}
+
+// For now, serialize as v5
+func (c CompatibleResultFindIntersection) MarshalJSON() ([]byte, error) {
+	six := chainsync.ResultFindIntersectionPraos(c)
+	var tip v5.PointStructV5
+	if six.Tip != nil {
+		tip = v5.PointStructV5{
+			Hash: six.Tip.ID,
+			Slot: six.Tip.Slot,
+		}
+		if six.Tip.Height != nil {
+			tip.BlockNo = *six.Tip.Height
+		}
+	}
+	var five v5.ResultFindIntersectionV5
+	if six.Intersection != nil {
+		five.IntersectionFound = &v5.IntersectionFoundV5{
+			Point: v5.PointFromV6(*six.Intersection),
+			Tip:   &tip,
+		}
+	} else {
+		// TODO: tip is messy here; we would have to parse it out of the error data and that's awkward
+		// It shouldn't be critical for now, so we just punt on that.
+		five.IntersectionNotFound = &v5.IntersectionNotFoundV5{
+			Tip: &tip,
+		}
+	}
+	return json.Marshal(&five)
 }
 
 func (c *CompatibleResultFindIntersection) UnmarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) error {
@@ -65,6 +95,17 @@ func (c *CompatibleResultFindIntersection) UnmarshalDynamoDBAttributeValue(item 
 	} else {
 		return fmt.Errorf("unable to parse as either v5 or v6 FindIntersection: %w", err)
 	}
+}
+
+func (c CompatibleResultFindIntersection) MarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) error {
+	six := chainsync.ResultFindIntersectionPraos(c)
+	five := v5.ResultFindIntersectionFromV6(six)
+	av, err := dynamodbattribute.Marshal(&five)
+	if err != nil {
+		return err
+	}
+	*item = *av
+	return nil
 }
 
 func (c CompatibleResultFindIntersection) String() string {
@@ -93,6 +134,12 @@ func (c *CompatibleResultNextBlock) UnmarshalJSON(data []byte) error {
 	}
 }
 
+func (c CompatibleResultNextBlock) MarshalJSON() ([]byte, error) {
+	six := chainsync.ResultNextBlockPraos(c)
+	five := v5.ResultNextBlockFromV6(six)
+	return json.Marshal(&five)
+}
+
 func (c *CompatibleResultNextBlock) UnmarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) error {
 	var s chainsync.ResultNextBlockPraos
 	err := dynamodbattribute.Unmarshal(item, &s)
@@ -109,6 +156,17 @@ func (c *CompatibleResultNextBlock) UnmarshalDynamoDBAttributeValue(item *dynamo
 	} else {
 		return fmt.Errorf("unable to parse as either v5 or v6 NextBlock: %w", err)
 	}
+}
+
+func (c CompatibleResultNextBlock) MarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) error {
+	six := chainsync.ResultNextBlockPraos(c)
+	five := v5.ResultNextBlockFromV6(six)
+	av, err := dynamodbattribute.Marshal(&five)
+	if err != nil {
+		return err
+	}
+	*item = *av
+	return nil
 }
 
 func (c CompatibleResultNextBlock) String() string {
@@ -137,6 +195,12 @@ func (c *CompatibleResponsePraos) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (c CompatibleResponsePraos) MarshalJSON() ([]byte, error) {
+	six := chainsync.ResponsePraos(c)
+	five := v5.ResponseFromV6(six)
+	return json.Marshal(&five)
+}
+
 func (c *CompatibleResponsePraos) UnmarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) error {
 	var s chainsync.ResponsePraos
 	if err := dynamodbattribute.Unmarshal(item, &s); err != nil {
@@ -151,18 +215,45 @@ func (c *CompatibleResponsePraos) UnmarshalDynamoDBAttributeValue(item *dynamodb
 	return nil
 }
 
+func (c CompatibleResponsePraos) MarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) error {
+	six := chainsync.ResponsePraos(c)
+	five := v5.ResponseFromV6(six)
+	av, err := dynamodbattribute.Marshal(&five)
+	if err != nil {
+		return err
+	}
+	*item = *av
+	return nil
+}
+
 func (r CompatibleResponsePraos) MustFindIntersectResult() CompatibleResultFindIntersection {
 	if r.Method != chainsync.FindIntersectionMethod {
 		panic(fmt.Errorf("must only use *Must* methods after switching on the findIntersection method; called on %v", r.Method))
 	}
-	return CompatibleResultFindIntersection(r.Result.(chainsync.ResultFindIntersectionPraos))
+	t, ok := r.Result.(chainsync.ResultFindIntersectionPraos)
+	if ok {
+		return CompatibleResultFindIntersection(t)
+	}
+	u, ok := r.Result.(*chainsync.ResultFindIntersectionPraos)
+	if ok && u != nil {
+		return CompatibleResultFindIntersection(*u)
+	}
+	panic(fmt.Errorf("must method called on incompatible type"))
 }
 
 func (r CompatibleResponsePraos) MustNextBlockResult() CompatibleResultNextBlock {
 	if r.Method != chainsync.NextBlockMethod {
 		panic(fmt.Errorf("must only use *Must* methods after switching on the nextBlock method; called on %v", r.Method))
 	}
-	return CompatibleResultNextBlock(r.Result.(chainsync.ResultNextBlockPraos))
+	t, ok := r.Result.(chainsync.ResultNextBlockPraos)
+	if ok {
+		return CompatibleResultNextBlock(t)
+	}
+	u, ok := r.Result.(*chainsync.ResultNextBlockPraos)
+	if ok && u != nil {
+		return CompatibleResultNextBlock(*u)
+	}
+	panic(fmt.Errorf("must method called on incompatible type"))
 }
 
 type CompatibleValue shared.Value
@@ -193,6 +284,11 @@ func (c *CompatibleValue) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (c CompatibleValue) MarshalJSON() ([]byte, error) {
+	s := v5.ValueFromV6(shared.Value(c))
+	return json.Marshal(&s)
+}
+
 func (c *CompatibleValue) UnmarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) error {
 	var s shared.Value
 	if err := dynamodbattribute.Unmarshal(item, &s); err != nil {
@@ -204,6 +300,16 @@ func (c *CompatibleValue) UnmarshalDynamoDBAttributeValue(item *dynamodb.Attribu
 		return nil
 	}
 	*c = CompatibleValue(s)
+	return nil
+}
+
+func (c CompatibleValue) MarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) error {
+	s := v5.ValueFromV6(shared.Value(c))
+	av, err := dynamodbattribute.Marshal(&s)
+	if err != nil {
+		return err
+	}
+	*item = *av
 	return nil
 }
 
@@ -233,6 +339,16 @@ func (c *CompatibleResult) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("unable to find an appropriate result")
 }
 
+func (c CompatibleResult) MarshalJSON() ([]byte, error) {
+	if c.NextBlock != nil {
+		return json.Marshal(c.NextBlock)
+	}
+	if c.FindIntersection != nil {
+		return json.Marshal(c.FindIntersection)
+	}
+	return nil, fmt.Errorf("unable to marshal empty result")
+}
+
 func (c *CompatibleResult) UnmarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) error {
 	var rfi CompatibleResultFindIntersection
 	r := CompatibleResult{}
@@ -248,4 +364,14 @@ func (c *CompatibleResult) UnmarshalDynamoDBAttributeValue(item *dynamodb.Attrib
 	r.FindIntersection = &rfi
 	*c = r
 	return nil
+}
+
+func (c CompatibleResult) MarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) error {
+	if c.NextBlock != nil {
+		return c.NextBlock.MarshalDynamoDBAttributeValue(item)
+	}
+	if c.FindIntersection != nil {
+		return c.FindIntersection.MarshalDynamoDBAttributeValue(item)
+	}
+	return fmt.Errorf("unable to marshal empty result")
 }

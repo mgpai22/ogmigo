@@ -20,6 +20,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -32,15 +33,6 @@ import (
 var (
 	bNil = []byte("nil")
 )
-
-type IntersectionFound struct {
-	Point PointV5
-	Tip   PointStructV5
-}
-
-type IntersectionNotFound struct {
-	Tip PointStructV5
-}
 
 // Use V5 materials only for JSON backwards compatibility.
 type TxV5 struct {
@@ -70,9 +62,29 @@ func (t TxV5) ConvertToV6() chainsync.Tx {
 		cr = &temp
 	}
 
+	certificates := []json.RawMessage{}
+	if t.Body.Certificates != nil {
+		certificates = t.Body.Certificates
+	}
+
+	signatories := []chainsync.Signature{}
+	for _, sig := range t.Witness.Bootstrap {
+		var s chainsync.Signature
+		// NOTE: error handling is ignored here, we should thread through the error
+		json.Unmarshal(sig, &s)
+		signatories = append(signatories, s)
+	}
+	for key, sig := range t.Witness.Signatures {
+		signatories = append(signatories, chainsync.Signature{Key: key, Signature: sig})
+	}
+
+	// Give it a sort, mostly for unit tests, so we don't intermittently fail
+	sort.Slice(signatories, func(i, j int) bool {
+		return signatories[i].Key < signatories[j].Key
+	})
+
 	cbor, _ := base64.StdEncoding.DecodeString(t.Raw)
 	cborHex := hex.EncodeToString(cbor)
-	n, _ := json.Marshal(t.Body.Network)
 	tx := chainsync.Tx{
 		ID:                       t.ID,
 		Spends:                   t.InputSource,
@@ -82,23 +94,93 @@ func (t TxV5) ConvertToV6() chainsync.Tx {
 		TotalCollateral:          tc,
 		CollateralReturn:         cr,
 		Outputs:                  t.Body.Outputs.ConvertToV6(),
-		Certificates:             t.Body.Certificates,
+		Certificates:             certificates,
 		Withdrawals:              withdrawals,
 		Fee:                      chainsync.Lovelace{Lovelace: t.Body.Fee},
 		ValidityInterval:         t.Body.ValidityInterval.ConvertToV6(),
 		Mint:                     t.Body.Mint.ConvertToV6(),
-		Network:                  string(n),
+		Network:                  t.Body.Network,
 		ScriptIntegrityHash:      t.Body.ScriptIntegrityHash,
 		RequiredExtraSignatories: t.Body.RequiredExtraSignatures,
 		RequiredExtraScripts:     nil,
 		Proposals:                t.Body.Update,
 		Votes:                    nil,
 		Metadata:                 t.Metadata,
-		Signatories:              t.Witness.Bootstrap,
+		Signatories:              signatories,
 		Scripts:                  t.Witness.Scripts,
 		Datums:                   t.Witness.Datums,
 		Redeemers:                t.Witness.Redeemers,
 		CBOR:                     cborHex,
+	}
+
+	return tx
+}
+
+func TxFromV6(t chainsync.Tx) TxV5 {
+	withdrawals := map[string]int64{}
+	for txid, amt := range t.Withdrawals {
+		withdrawals[txid] = amt.Lovelace.Int64()
+	}
+
+	var tc *int64
+	if t.TotalCollateral != nil {
+		temp := t.TotalCollateral.Lovelace.Int64()
+		tc = &temp
+	}
+	var cr *TxOutV5
+	if t.CollateralReturn != nil {
+		temp := TxOutFromV6(*t.CollateralReturn)
+		cr = &temp
+	}
+
+	mint := ValueFromV6(t.Mint)
+
+	certificates := []json.RawMessage{}
+	if t.Certificates != nil {
+		certificates = t.Certificates
+	}
+
+	cbor, _ := hex.DecodeString(t.CBOR)
+	cborB64 := base64.StdEncoding.EncodeToString(cbor)
+
+	witness := chainsync.Witness{
+		Datums:     t.Datums,
+		Redeemers:  t.Redeemers,
+		Scripts:    t.Scripts,
+		Signatures: map[string]string{},
+	}
+	for _, sig := range t.Signatories {
+		if sig.ChainCode != "" || sig.AddressAttributes != "" {
+			s, _ := json.Marshal(sig)
+			witness.Bootstrap = append(witness.Bootstrap, s)
+		} else {
+			witness.Signatures[sig.Key] = sig.Signature
+		}
+	}
+
+	tx := TxV5{
+		ID:          t.ID,
+		InputSource: t.Spends,
+		Body: TxBodyV5{
+			Inputs:                  InputsFromV6(t.Inputs),
+			References:              InputsFromV6(t.References),
+			Collaterals:             InputsFromV6(t.Collaterals),
+			TotalCollateral:         tc,
+			CollateralReturn:        cr,
+			Outputs:                 TxOutsFromV6(t.Outputs),
+			Certificates:            certificates,
+			Withdrawals:             withdrawals,
+			Fee:                     t.Fee.Lovelace,
+			ValidityInterval:        ValidityIntervalFromV6(t.ValidityInterval),
+			Mint:                    &mint,
+			Network:                 t.Network,
+			ScriptIntegrityHash:     t.ScriptIntegrityHash,
+			RequiredExtraSignatures: t.RequiredExtraSignatories,
+			Update:                  t.Proposals,
+		},
+		Raw:      cborB64,
+		Metadata: t.Metadata,
+		Witness:  witness,
 	}
 
 	return tx
@@ -110,7 +192,7 @@ type TxBodyV5 struct {
 	Fee                     num.Int            `json:"fee,omitempty"                     dynamodbav:"fee,omitempty"`
 	Inputs                  TxInsV5            `json:"inputs,omitempty"                  dynamodbav:"inputs,omitempty"`
 	Mint                    *ValueV5           `json:"mint,omitempty"                    dynamodbav:"mint,omitempty"`
-	Network                 json.RawMessage    `json:"network,omitempty"                 dynamodbav:"network,omitempty"`
+	Network                 *string            `json:"network,omitempty"                 dynamodbav:"network,omitempty"`
 	Outputs                 TxOutsV5           `json:"outputs,omitempty"                 dynamodbav:"outputs,omitempty"`
 	RequiredExtraSignatures []string           `json:"requiredExtraSignatures,omitempty" dynamodbav:"requiredExtraSignatures,omitempty"`
 	ScriptIntegrityHash     string             `json:"scriptIntegrityHash,omitempty"     dynamodbav:"scriptIntegrityHash,omitempty"`
@@ -126,9 +208,20 @@ type TxBodyV5 struct {
 type TxInsV5 []TxInV5
 
 func (t TxInsV5) ConvertToV6() chainsync.TxIns {
-	var txIns chainsync.TxIns
+	txIns := chainsync.TxIns{}
 	for _, txIn := range t {
 		txIns = append(txIns, txIn.ConvertToV6())
+	}
+	return txIns
+}
+
+func InputsFromV6(t chainsync.TxIns) TxInsV5 {
+	txIns := []TxInV5{}
+	for _, txIn := range t {
+		txIns = append(txIns, TxInV5{
+			TxHash: txIn.Transaction.ID,
+			Index:  txIn.Index,
+		})
 	}
 	return txIns
 }
@@ -165,12 +258,30 @@ func (t TxOutV5) ConvertToV6() chainsync.TxOut {
 	}
 }
 
+func TxOutFromV6(t chainsync.TxOut) TxOutV5 {
+	return TxOutV5{
+		Address:   t.Address,
+		Datum:     t.Datum,
+		DatumHash: t.DatumHash,
+		Value:     ValueFromV6(t.Value),
+		Script:    t.Script,
+	}
+}
+
 type TxOutsV5 []TxOutV5
 
 func (t TxOutsV5) ConvertToV6() chainsync.TxOuts {
 	var txOuts []chainsync.TxOut
 	for _, txOut := range t {
 		txOuts = append(txOuts, txOut.ConvertToV6())
+	}
+	return txOuts
+}
+
+func TxOutsFromV6(t chainsync.TxOuts) TxOutsV5 {
+	var txOuts []TxOutV5
+	for _, txOut := range t {
+		txOuts = append(txOuts, TxOutFromV6(txOut))
 	}
 	return txOuts
 }
@@ -197,10 +308,16 @@ func (v ValidityIntervalV5) ConvertToV6() chainsync.ValidityInterval {
 		InvalidAfter:  v.InvalidHereafter,
 	}
 }
+func ValidityIntervalFromV6(v chainsync.ValidityInterval) ValidityIntervalV5 {
+	return ValidityIntervalV5{
+		InvalidBefore:    v.InvalidBefore,
+		InvalidHereafter: v.InvalidAfter,
+	}
+}
 
 type ValueV5 struct {
 	Coins  num.Int                    `json:"coins,omitempty"  dynamodbav:"coins,omitempty"`
-	Assets map[shared.AssetID]num.Int `json:"assets,omitempty" dynamodbav:"assets,omitempty"`
+	Assets map[shared.AssetID]num.Int `json:"assets" dynamodbav:"assets,omitempty"`
 }
 
 func (v ValueV5) ConvertToV6() shared.Value {
@@ -229,6 +346,30 @@ func (v ValueV5) ConvertToV6() shared.Value {
 	}
 
 	return assets
+}
+
+func ValueFromV6(v shared.Value) ValueV5 {
+	var coins num.Int
+	assets := map[shared.AssetID]num.Int{}
+	for policyId, assetMap := range v {
+		for assetName, assetNum := range assetMap {
+			if policyId == shared.AdaPolicy && assetName == shared.AdaAsset {
+				coins = assetNum
+			} else {
+				assetId := ""
+				if assetName != "" {
+					assetId = policyId + "." + assetName
+				} else {
+					assetId = policyId
+				}
+				assets[shared.AssetID(assetId)] = assetNum
+			}
+		}
+	}
+	return ValueV5{
+		Coins:  coins,
+		Assets: assets,
+	}
 }
 
 type BlockV5 struct {
@@ -315,7 +456,7 @@ func (p PointV5) ConvertToV6() chainsync.Point {
 	return p6
 }
 
-func FromV6(p chainsync.Point) *PointV5 {
+func PointFromV6(p chainsync.Point) *PointV5 {
 	var p5 PointV5
 	if p.PointType() == chainsync.PointTypeString {
 		ps, _ := p.PointString()
@@ -448,6 +589,7 @@ func (p *PointV5) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// TODO: why do we have two types here?
 type ResultV5 struct {
 	IntersectionFound    *IntersectionFoundV5    `json:",omitempty" dynamodbav:",omitempty"`
 	IntersectionNotFound *IntersectionNotFoundV5 `json:",omitempty" dynamodbav:",omitempty"`
@@ -473,12 +615,38 @@ func (r ResultFindIntersectionV5) ConvertToV6() chainsync.ResultFindIntersection
 	} else if r.IntersectionNotFound != nil {
 		// Emulate the v6 IntersectionNotFound error as best as possible.
 		tip := r.IntersectionNotFound.Tip.ConvertToV6()
+		rfi.Tip = &tip
 		tipRaw, _ := json.Marshal(&tip)
 		err := chainsync.ResultError{Code: 1000, Message: "Intersection not found", Data: tipRaw}
 		rfi.Error = &err
 	}
 
 	return rfi
+}
+
+func ResultFindIntersectionFromV6(rfi chainsync.ResultFindIntersectionPraos) ResultFindIntersectionV5 {
+	var r ResultFindIntersectionV5
+	if rfi.Intersection != nil {
+		p := PointFromV6(*rfi.Intersection)
+		tip := PointStructV5{
+			Hash: rfi.Tip.ID,
+			Slot: rfi.Tip.Slot,
+		}
+		if rfi.Tip.Height != nil {
+			tip.BlockNo = *rfi.Tip.Height
+		}
+		r.IntersectionFound = &IntersectionFoundV5{
+			Point: p,
+			Tip:   &tip,
+		}
+	} else if rfi.Error != nil {
+		var tip PointStructV5
+		_ = json.Unmarshal(rfi.Error.Data, &tip)
+		r.IntersectionNotFound = &IntersectionNotFoundV5{
+			Tip: &tip,
+		}
+	}
+	return r
 }
 
 type RollBackwardV5 struct {
@@ -530,7 +698,7 @@ func (b RollForwardBlockV5) GetNonByronBlock() *BlockV5 {
 func (b RollForwardBlockV5) ConvertToV6() (chainsync.Block, error) {
 	nbb := b.GetNonByronBlock()
 	if nbb == nil {
-		return chainsync.Block{}, fmt.Errorf("Byron blocks not supported")
+		return chainsync.Block{}, fmt.Errorf("byron blocks not supported")
 	}
 	var txArray []chainsync.Tx
 	for _, t := range nbb.Body {
@@ -571,6 +739,7 @@ func (b RollForwardBlockV5) ConvertToV6() (chainsync.Block, error) {
 		}
 	}
 
+	// TODO: this might be wrong
 	var leaderValue *chainsync.LeaderValue
 	if nbb.Header.LeaderValue["output"] != nil && nbb.Header.LeaderValue["proof"] != nil {
 		decodedOutput, _ := base64.StdEncoding.DecodeString(string(nbb.Header.LeaderValue["output"]))
@@ -604,6 +773,87 @@ func (b RollForwardBlockV5) ConvertToV6() (chainsync.Block, error) {
 	}, nil
 }
 
+func BlockFromV6(b chainsync.Block) (RollForwardBlockV5, error) {
+	if b.Era == "byron" {
+		return RollForwardBlockV5{}, fmt.Errorf("byron blocks not supported")
+	}
+
+	var txArray []TxV5
+	for _, t := range b.Transactions {
+		txArray = append(txArray, TxFromV6(t))
+	}
+
+	var nonce map[string]string
+	if b.Nonce != nil {
+		nonce = map[string]string{"output": b.Nonce.Output, "proof": b.Nonce.Proof}
+	}
+	protocolVersion := b.Protocol.Version
+
+	vkey, _ := hex.DecodeString(b.Issuer.OperationalCertificate.Kes.VerificationKey)
+	hotVk := base64.StdEncoding.EncodeToString(vkey)
+	opCert := map[string]interface{}{
+		"hotVk":     hotVk,
+		"count":     b.Issuer.OperationalCertificate.Count,
+		"kesPeriod": b.Issuer.OperationalCertificate.Kes.Period,
+	}
+
+	// TODO: this might be wrong
+	output := ""
+	proof := ""
+	if b.Issuer.LeaderValue != nil {
+		output = base64.StdEncoding.EncodeToString([]byte(b.Issuer.LeaderValue.Output))
+		proof = base64.StdEncoding.EncodeToString([]byte(b.Issuer.LeaderValue.Proof))
+	}
+	leaderValue := map[string][]byte{
+		"output": []byte(output),
+		"proof":  []byte(proof),
+	}
+
+	bv5 := BlockV5{
+		Body: txArray,
+		Header: BlockHeaderV5{
+			Nonce:           nonce,
+			ProtocolVersion: map[string]int{"major": int(protocolVersion.Major), "minor": int(protocolVersion.Minor), "patch": int(protocolVersion.Patch)},
+			OpCert:          opCert,
+			LeaderValue:     leaderValue,
+			IssuerVK:        b.Issuer.VerificationKey,
+			IssuerVrf:       b.Issuer.VrfVerificationKey,
+			PrevHash:        b.Ancestor,
+			Slot:            b.Slot,
+			BlockHeight:     b.Height,
+			BlockSize:       uint64(b.Size.Bytes),
+			BlockHash:       b.ID,
+		},
+		HeaderHash: b.ID,
+	}
+
+	switch b.Era {
+	case "shelley":
+		return RollForwardBlockV5{
+			Shelley: &bv5,
+		}, nil
+	case "allegra":
+		return RollForwardBlockV5{
+			Allegra: &bv5,
+		}, nil
+	case "mary":
+		return RollForwardBlockV5{
+			Mary: &bv5,
+		}, nil
+	case "alonzo":
+		return RollForwardBlockV5{
+			Alonzo: &bv5,
+		}, nil
+	case "babbage":
+		return RollForwardBlockV5{
+			Babbage: &bv5,
+		}, nil
+	default:
+		return RollForwardBlockV5{}, fmt.Errorf("unknown era: %v", b.Era)
+	}
+
+}
+
 type RollForwardV5 struct {
 	Block RollForwardBlockV5 `json:"block,omitempty" dynamodbav:"block,omitempty"`
 	Tip   PointStructV5      `json:"tip,omitempty"   dynamodbav:"tip,omitempty"`
@@ -634,6 +884,41 @@ func (r ResultNextBlockV5) ConvertToV6() chainsync.ResultNextBlockPraos {
 	}
 
 	return rnb
+}
+
+func ResultNextBlockFromV6(rnb chainsync.ResultNextBlockPraos) ResultNextBlockV5 {
+	var r ResultNextBlockV5
+	if rnb.Direction == chainsync.RollForwardString {
+		tip := PointStructV5{
+			Hash: rnb.Tip.ID,
+			Slot: rnb.Tip.Slot,
+		}
+		if rnb.Tip.Height != nil {
+			tip.BlockNo = *rnb.Tip.Height
+		}
+		block, err := BlockFromV6(*rnb.Block)
+		if err != nil {
+			// NOTE: we don't currently support byron
+		}
+		r.RollForward = &RollForwardV5{
+			Block: block,
+			Tip:   tip,
+		}
+	} else if rnb.Direction == chainsync.RollBackwardString {
+		tip := PointStructV5{
+			Hash: rnb.Tip.ID,
+			Slot: rnb.Tip.Slot,
+		}
+		if rnb.Tip.Height != nil {
+			tip.BlockNo = *rnb.Tip.Height
+		}
+		r.RollBackward = &RollBackwardV5{
+			Point: *PointFromV6(*rnb.Point),
+			Tip:   tip,
+		}
+	}
+
+	return r
 }
 
 type IntersectionFoundV5 struct {
@@ -711,4 +996,41 @@ func (r ResponseV5) ConvertToV6() chainsync.ResponsePraos {
 	c.ID = r.Reflection
 	c.JsonRpc = "2.0"
 	return c
+}
+
+// I don't really understand the nest of types here...
+func ResponseFromV6(r chainsync.ResponsePraos) ResponseV5 {
+	var result *ResultV5
+	if r.Method == chainsync.FindIntersectionMethod {
+		rfi := ResultFindIntersectionFromV6(r.MustFindIntersectResult())
+		if rfi.IntersectionFound != nil {
+			result = &ResultV5{
+				IntersectionFound: rfi.IntersectionFound,
+			}
+		} else {
+			result = &ResultV5{
+				IntersectionNotFound: rfi.IntersectionNotFound,
+			}
+		}
+	} else if r.Method == chainsync.NextBlockMethod {
+		rnb := ResultNextBlockFromV6(r.MustNextBlockResult())
+		if rnb.RollForward != nil {
+			result = &ResultV5{
+				RollForward: rnb.RollForward,
+			}
+		} else {
+			result = &ResultV5{
+				RollBackward: rnb.RollBackward,
+			}
+		}
+	}
+
+	return ResponseV5{
+		Type:        "response",
+		Version:     "1.0",
+		ServiceName: "cardano",
+		MethodName:  "cardano",
+		Result:      result,
+		Reflection:  r.ID,
+	}
 }

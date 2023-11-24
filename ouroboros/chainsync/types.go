@@ -411,14 +411,37 @@ func (r ResponsePraos) MustFindIntersectResult() ResultFindIntersectionPraos {
 	if r.Method != FindIntersectionMethod {
 		panic(fmt.Errorf("must only use *Must* methods after switching on the findIntersection method; called on %v", r.Method))
 	}
-	return r.Result.(ResultFindIntersectionPraos)
+	t, ok := r.Result.(ResultFindIntersectionPraos)
+	if ok {
+		return t
+	}
+	u, ok := r.Result.(*ResultFindIntersectionPraos)
+	if ok && u != nil {
+		return *u
+	}
+	panic(fmt.Errorf("must method used on incompatible type"))
 }
 
 func (r ResponsePraos) MustNextBlockResult() ResultNextBlockPraos {
 	if r.Method != NextBlockMethod {
 		panic(fmt.Errorf("must only use *Must* methods after switching on the nextBlock method; called on %v", r.Method))
 	}
-	return r.Result.(ResultNextBlockPraos)
+	t, ok := r.Result.(ResultNextBlockPraos)
+	if ok {
+		return t
+	}
+	u, ok := r.Result.(*ResultNextBlockPraos)
+	if ok && u != nil {
+		return *u
+	}
+	panic(fmt.Errorf("must method used on incompatible type"))
+}
+
+type Signature struct {
+	Key               string `json:"key" dynamodbav:"key"`
+	Signature         string `json:"signature" dynamodbav:"signature"`
+	ChainCode         string `json:"chainCode,omitempty" dynamodbav:"chainCode,omitempty"`
+	AddressAttributes string `json:"addressAttributes,omitempty" dynamodbav:"addressAttributes,omitempty"`
 }
 
 type Tx struct {
@@ -435,16 +458,16 @@ type Tx struct {
 	Fee                      Lovelace            `json:"fee,omitempty"                      dynamodbav:"fee,omitempty"`
 	ValidityInterval         ValidityInterval    `json:"validityInterval"                   dynamodbav:"validityInterval,omitempty"`
 	Mint                     shared.Value        `json:"mint,omitempty"                     dynamodbav:"mint,omitempty"`
-	Network                  string              `json:"network,omitempty"                  dynamodbav:"network,omitempty"`
+	Network                  *string             `json:"network,omitempty"                  dynamodbav:"network,omitempty"`
 	ScriptIntegrityHash      string              `json:"scriptIntegrityHash,omitempty"      dynamodbav:"scriptIntegrityHash,omitempty"`
 	RequiredExtraSignatories []string            `json:"requiredExtraSignatories,omitempty" dynamodbav:"requiredExtraSignatories,omitempty"`
 	RequiredExtraScripts     []string            `json:"requiredExtraScripts,omitempty"     dynamodbav:"requiredExtraScripts,omitempty"`
 	Proposals                json.RawMessage     `json:"proposals,omitempty"                dynamodbav:"proposals,omitempty"`
 	Votes                    json.RawMessage     `json:"votes,omitempty"                    dynamodbav:"votes,omitempty"`
 	Metadata                 json.RawMessage     `json:"metadata,omitempty"                 dynamodbav:"metadata,omitempty"`
-	Signatories              []json.RawMessage   `json:"signatories,omitempty"              dynamodbav:"signatories,omitempty"`
+	Signatories              []Signature         `json:"signatories,omitempty"              dynamodbav:"signatories,omitempty"`
 	Scripts                  json.RawMessage     `json:"scripts,omitempty"                  dynamodbav:"scripts,omitempty"`
-	Datums                   Datums              `json:"datums,omitempty"                   dynamodbav:"datums,omitempty"`
+	Datums                   Datums              `json:"datums"                   dynamodbav:"datums,omitempty"`
 	Redeemers                json.RawMessage     `json:"redeemers,omitempty"                dynamodbav:"redeemers,omitempty"`
 	CBOR                     string              `json:"cbor,omitempty"                     dynamodbav:"cbor,omitempty"`
 }
@@ -578,7 +601,7 @@ func (d *Datums) UnmarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) 
 
 type Witness struct {
 	Bootstrap  []json.RawMessage `json:"bootstrap,omitempty"  dynamodbav:"bootstrap,omitempty"`
-	Datums     Datums            `json:"datums,omitempty"     dynamodbav:"datums,omitempty"`
+	Datums     Datums            `json:"datums"     dynamodbav:"datums,omitempty"`
 	Redeemers  json.RawMessage   `json:"redeemers,omitempty"  dynamodbav:"redeemers,omitempty"`
 	Scripts    json.RawMessage   `json:"scripts,omitempty"    dynamodbav:"scripts,omitempty"`
 	Signatures map[string]string `json:"signatures,omitempty" dynamodbav:"signatures,omitempty"`
