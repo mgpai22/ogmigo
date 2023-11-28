@@ -433,7 +433,7 @@ func TestSerializeCompatibleValue(t *testing.T) {
 	})
 }
 
-func ValueChecks(t *testing.T) {
+func Test_ValueChecks(t *testing.T) {
 	t.Run("string", func(t *testing.T) {
 		equal1 := shared.ValueFromCoins(
 			shared.Coin{AssetId: shared.AdaAssetID, Amount: num.Int64(1000000)},
@@ -463,16 +463,16 @@ func ValueChecks(t *testing.T) {
 			shared.Coin{AssetId: shared.AdaAssetID, Amount: num.Int64(1000000)},
 			shared.Coin{AssetId: shared.FromSeparate("abra", "cadabra"), Amount: num.Int64(1234567890)},
 		)
-		if !shared.GreaterThan(val1, val2) {
+		if !shared.GreaterThanOrEqual(val1, val2) {
 			t.Fatalf("%v is not greater than %v", val1, val2)
 		}
-		if !shared.LessThan(val2, val1) {
+		if !shared.LessThanOrEqual(val2, val1) {
 			t.Fatalf("%v is not less than %v", val1, val2)
 		}
-		if !shared.GreaterThan(val3, val4) {
+		if !shared.GreaterThanOrEqual(val3, val4) {
 			t.Fatalf("%v is not greater than %v", val3, val4)
 		}
-		if !shared.LessThan(val4, val3) {
+		if !shared.LessThanOrEqual(val4, val3) {
 			t.Fatalf("%v is not less than %v", val4, val3)
 		}
 		if ok, err := shared.Enough(val3, val4); !ok {
@@ -501,7 +501,7 @@ func ValueChecks(t *testing.T) {
 		val8 := shared.Subtract(val3, val7)
 		val9 := shared.ValueFromCoins(
 			shared.Coin{AssetId: shared.AdaAssetID, Amount: num.Int64(400000)},
-			shared.Coin{AssetId: shared.FromSeparate("abra", "cadabra"), Amount: num.Int64(1000000000)},
+			shared.Coin{AssetId: shared.FromSeparate("abra", "cadabra"), Amount: num.Int64(10000000000)},
 		)
 		if !shared.Equal(val8, val9) {
 			t.Fatalf("%v is not the expected value (%v)", val8, val9)

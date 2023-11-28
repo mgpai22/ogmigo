@@ -56,21 +56,33 @@ func Subtract(a Value, b Value) Value {
 
 func Enough(have Value, want Value) (bool, error) {
 	for policyId, assets := range want {
-		if haveAssets, ok := have[policyId]; ok {
-			for assetName, amt := range assets {
-				if haveAssets[assetName].LessThan(amt) {
-					return false, fmt.Errorf("not enough %v (%v) to meet demand (%v): %w", assetName, have[policyId][assetName].String(), amt, ErrInsufficientFunds)
-				}
+		for assetName, amt := range assets {
+			haveAssets, ok := have[policyId]
+			haveAmt := num.Uint64(0)
+			if ok {
+				haveAmt = haveAssets[assetName]
+			}
+			if haveAmt.LessThan(amt) {
+				return false, fmt.Errorf("not enough %v (%v) to meet demand (%v): %w", assetName, have[policyId][assetName].String(), amt, ErrInsufficientFunds)
 			}
 		}
 	}
 	return true, nil
 }
 
-func LessThan(a, b Value) bool {
-	for policy, policyMap := range b {
-		for asset, amt := range policyMap {
-			if a[policy] != nil && !a[policy][asset].LessThan(amt) {
+// A should be strictly less than B
+// meaning for every asset in A, the amount of asset in B should be greater
+// meaning loop over every A asset, because if there's an asset in a that's not in b, we need to fail
+// but if there's an asset in b that's not in a, that's fine
+func LessThanOrEqual(a, b Value) bool {
+	for policy, policyMap := range a {
+		for asset, aAmt := range policyMap {
+			bAmt := num.Uint64(0)
+			bAssets, ok := b[policy]
+			if ok {
+				bAmt = bAssets[asset]
+			}
+			if aAmt.GreaterThan(bAmt) {
 				return false
 			}
 		}
@@ -79,10 +91,19 @@ func LessThan(a, b Value) bool {
 	return true
 }
 
-func GreaterThan(a, b Value) bool {
+// A should be strictly greater than B
+// meaning for every asset in B, the amount of asset in A should be greater
+// meaning loop over b, because if there's an asset in b that's not in a, we need to fail
+// but if there's an asset in a that's not in b, that's fine
+func GreaterThanOrEqual(a, b Value) bool {
 	for policy, policyMap := range b {
-		for asset, amt := range policyMap {
-			if a[policy] != nil && !a[policy][asset].GreaterThan(amt) {
+		for asset, bAmt := range policyMap {
+			aAmt := num.Uint64(0)
+			aAssets, ok := a[policy]
+			if ok {
+				aAmt = aAssets[asset]
+			}
+			if aAmt.LessThan(bAmt) {
 				return false
 			}
 		}
@@ -92,9 +113,34 @@ func GreaterThan(a, b Value) bool {
 }
 
 func Equal(a, b Value) bool {
-	for policy, policyMap := range b {
-		for asset, amt := range policyMap {
-			if a[policy] != nil && !a[policy][asset].Equal(amt) {
+	policies := map[string]bool{}
+	for policy := range a {
+		policies[policy] = true
+	}
+	for policy := range b {
+		policies[policy] = true
+	}
+
+	for policy := range policies {
+		aAssets, okA := a[policy]
+		bAssets, okB := b[policy]
+		assets := map[string]bool{}
+		for asset := range aAssets {
+			assets[asset] = true
+		}
+		for asset := range bAssets {
+			assets[asset] = true
+		}
+		for asset := range assets {
+			aAmt := num.Uint64(0)
+			bAmt := num.Uint64(0)
+			if okA {
+				aAmt = aAssets[asset]
+			}
+			if okB {
+				bAmt = bAssets[asset]
+			}
+			if !aAmt.Equal(bAmt) {
 				return false
 			}
 		}
