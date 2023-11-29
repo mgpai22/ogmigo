@@ -45,7 +45,7 @@ func (c *Client) EvaluateTx(ctx context.Context, data string) (response *Evaluat
 	}
 
 	var (
-		payload = makePayload("evaluateTransaction", Map{"transaction": tx})
+		payload = makePayload("evaluateTransaction", Map{"transaction": tx}, nil)
 		raw     json.RawMessage
 	)
 	if err := c.query(ctx, payload, &raw); err != nil {

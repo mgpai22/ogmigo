@@ -51,21 +51,21 @@ func (c *circular) prefix(data ...[]byte) [][]byte {
 	return append(data, c.list()...)
 }
 
-func makePayload(methodName string, args Map) Map {
+func makePayload(methodName string, args Map, id Map) Map {
 	return Map{
 		"jsonrpc": "2.0",
 		"method":  methodName,
 		"params":  args,
-		"id":      nil,
+		"id":      id,
 	}
 }
 
-func makeSubmitTxPayload(cborHexTx string, args Map) Map {
-	tx := SubmitTxPayload{CBOR: cborHexTx}
+func makePayloadV5(methodName string, args Map) Map {
 	return Map{
-		"jsonrpc": "2.0",
-		"method":  "submitTransaction",
-		"params":  Map{"transaction": tx},
-		"id":      args,
+		"type":        "jsonwsp/request",
+		"version":     "1.0",
+		"servicename": "ogmios",
+		"methodname":  methodName,
+		"args":        args,
 	}
 }

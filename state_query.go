@@ -25,7 +25,7 @@ import (
 
 func (c *Client) ChainTip(ctx context.Context) (chainsync.Point, error) {
 	var (
-		payload = makePayload("queryLedgerState/tip", Map{})
+		payload = makePayload("queryLedgerState/tip", Map{}, nil)
 		content struct{ Result chainsync.Point }
 	)
 
@@ -38,7 +38,7 @@ func (c *Client) ChainTip(ctx context.Context) (chainsync.Point, error) {
 
 func (c *Client) CurrentEpoch(ctx context.Context) (uint64, error) {
 	var (
-		payload = makePayload("queryLedgerState/epoch", Map{})
+		payload = makePayload("queryLedgerState/epoch", Map{}, nil)
 		content struct{ Result uint64 }
 	)
 
@@ -51,7 +51,7 @@ func (c *Client) CurrentEpoch(ctx context.Context) (uint64, error) {
 
 func (c *Client) CurrentProtocolParameters(ctx context.Context) (json.RawMessage, error) {
 	var (
-		payload = makePayload("queryLedgerState/protocolParameters", Map{})
+		payload = makePayload("queryLedgerState/protocolParameters", Map{}, nil)
 		content struct{ Result json.RawMessage }
 	)
 
@@ -64,7 +64,7 @@ func (c *Client) CurrentProtocolParameters(ctx context.Context) (json.RawMessage
 
 func (c *Client) GenesisConfig(ctx context.Context, era string) (json.RawMessage, error) {
 	var (
-		payload = makePayload("queryNetwork/genesisConfiguration", Map{"era": era})
+		payload = makePayload("queryNetwork/genesisConfiguration", Map{"era": era}, nil)
 		content struct{ Result json.RawMessage }
 	)
 
@@ -99,7 +99,7 @@ type EraParameters struct {
 
 func (c *Client) EraSummaries(ctx context.Context) (*EraHistory, error) {
 	var (
-		payload = makePayload("queryLedgerState/eraSummaries", Map{})
+		payload = makePayload("queryLedgerState/eraSummaries", Map{}, nil)
 		content struct{ Result json.RawMessage }
 	)
 
@@ -119,7 +119,7 @@ func (c *Client) EraSummaries(ctx context.Context) (*EraHistory, error) {
 
 func (c *Client) EraStart(ctx context.Context) (statequery.EraStart, error) {
 	var (
-		payload = makePayload("queryLedgerState/eraStart", Map{})
+		payload = makePayload("queryLedgerState/eraStart", Map{}, nil)
 		content struct{ Result statequery.EraStart }
 	)
 
@@ -132,7 +132,7 @@ func (c *Client) EraStart(ctx context.Context) (statequery.EraStart, error) {
 
 func (c *Client) UtxosByAddress(ctx context.Context, addresses ...string) ([]statequery.TxOut, error) {
 	var (
-		payload = makePayload("queryLedgerState/utxo", Map{"addresses": addresses})
+		payload = makePayload("queryLedgerState/utxo", Map{"addresses": addresses}, nil)
 		content struct{ Result []statequery.TxOut }
 	)
 
@@ -145,7 +145,7 @@ func (c *Client) UtxosByAddress(ctx context.Context, addresses ...string) ([]sta
 
 func (c *Client) UtxosByTxIn(ctx context.Context, txIns ...chainsync.TxInQuery) ([]statequery.TxOut, error) {
 	var (
-		payload = makePayload("queryLedgerState/utxo", Map{"outputReferences": txIns})
+		payload = makePayload("queryLedgerState/utxo", Map{"outputReferences": txIns}, nil)
 		content struct{ Result []statequery.TxOut }
 	)
 
