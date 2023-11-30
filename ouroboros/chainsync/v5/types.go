@@ -67,15 +67,31 @@ func (t TxV5) ConvertToV6() chainsync.Tx {
 		certificates = t.Body.Certificates
 	}
 
+	// It's important to note that sigs, bootstrap or not, may be Base64. Also,
+	// addressAttributes (bootstrap) may be Base64. (chainCode should be hex-only.)
+	// For v6, we need to decode all Base64 sig data to hex strings.
 	signatories := []chainsync.Signature{}
 	for _, sig := range t.Witness.Bootstrap {
 		var s chainsync.Signature
 		// NOTE: error handling is ignored here, we should thread through the error
 		json.Unmarshal(sig, &s)
+
+		if decodedSig, error := base64.StdEncoding.DecodeString(s.Signature); error == nil {
+			s.Signature = hex.EncodeToString(decodedSig)
+		}
+		if s.AddressAttributes != "" {
+			if decodedAtt, error := base64.StdEncoding.DecodeString(s.AddressAttributes); error == nil {
+				s.AddressAttributes = hex.EncodeToString(decodedAtt)
+			}
+		}
 		signatories = append(signatories, s)
 	}
 	for key, sig := range t.Witness.Signatures {
-		signatories = append(signatories, chainsync.Signature{Key: key, Signature: sig})
+		newSig := sig
+		if decodedSig, error := base64.StdEncoding.DecodeString(newSig); error == nil {
+			newSig = hex.EncodeToString(decodedSig)
+		}
+		signatories = append(signatories, chainsync.Signature{Key: key, Signature: newSig})
 	}
 
 	// Give it a sort, mostly for unit tests, so we don't intermittently fail
