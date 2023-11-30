@@ -166,11 +166,20 @@ func TxFromV6(t chainsync.Tx) TxV5 {
 		Signatures: map[string]string{},
 	}
 	for _, sig := range t.Signatories {
-		if sig.ChainCode != "" || sig.AddressAttributes != "" {
-			s, _ := json.Marshal(sig)
+		// Convert signatures and addressAttributes back to Base64.
+		newSig := sig
+
+		sigData, _ := hex.DecodeString(newSig.Signature)
+		newSig.Signature = base64.StdEncoding.EncodeToString(sigData)
+		if newSig.ChainCode != "" || newSig.AddressAttributes != "" {
+			if newSig.AddressAttributes != "" {
+				attrData, _ := hex.DecodeString(newSig.AddressAttributes)
+				newSig.AddressAttributes = base64.StdEncoding.EncodeToString(attrData)
+			}
+			s, _ := json.Marshal(newSig)
 			witness.Bootstrap = append(witness.Bootstrap, s)
 		} else {
-			witness.Signatures[sig.Key] = sig.Signature
+			witness.Signatures[newSig.Key] = newSig.Signature
 		}
 	}
 
