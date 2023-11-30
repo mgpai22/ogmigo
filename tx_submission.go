@@ -36,6 +36,10 @@ type ResponseTx struct {
 	ID string `json:"id,omitempty" dynamodbav:"id,omitempty"`
 }
 
+type SubmitTx struct {
+	Cbor string `json:"cbor"`
+}
+
 // type Response struct {
 // 	Type        string
 // 	Version     string
@@ -48,8 +52,11 @@ type ResponseTx struct {
 // SubmitTx submits the transaction via ogmios
 // https://ogmios.dev/mini-protocols/local-tx-submission/
 func (c *Client) SubmitTx(ctx context.Context, data string) (err error) {
+	tx := SubmitTx{
+		Cbor: data,
+	}
 	var (
-		payload = makePayload("submitTransaction", Map{"transaction": data}, Map{})
+		payload = makePayload("submitTransaction", Map{"transaction": tx}, Map{})
 		content struct{ Result Response }
 	)
 	if err := c.query(ctx, payload, &content); err != nil {
