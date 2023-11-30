@@ -149,12 +149,19 @@ func Equal(a, b Value) bool {
 	return true
 }
 
-func (v Value) AddAsset(coins ...Coin) {
+func (v *Value) AddAsset(coins ...Coin) {
+	// As a courtesy, initialize Value if necessary.
+	if *v == nil {
+		*v = Value{}
+	}
+
 	for _, coin := range coins {
-		if _, ok := v[coin.AssetId.PolicyID()]; !ok {
-			v[coin.AssetId.PolicyID()] = map[string]num.Int{}
+		policy := coin.AssetId.PolicyID()
+		asset := coin.AssetId.AssetName()
+		if _, ok := (*v)[policy]; !ok {
+			(*v)[policy] = map[string]num.Int{}
 		}
-		v[coin.AssetId.PolicyID()][coin.AssetId.AssetName()] = v[coin.AssetId.PolicyID()][coin.AssetId.AssetName()].Add(coin.Amount)
+		(*v)[policy][asset] = (*v)[policy][asset].Add(coin.Amount)
 	}
 }
 
@@ -169,9 +176,8 @@ func (v Value) AssetAmount(asset AssetID) num.Int {
 	return num.Int64(0)
 }
 
-func (v Value) AssetsExceptAda() (Value, uint32) {
+func (v Value) AssetsExceptAda() Value {
 	policies := Value{}
-	var cnt uint32 = 0
 	for policy, tokenMap := range v {
 		if policy == AdaPolicy {
 			continue
@@ -179,10 +185,9 @@ func (v Value) AssetsExceptAda() (Value, uint32) {
 		policies[policy] = map[string]num.Int{}
 		for token, quantity := range tokenMap {
 			policies[policy][token] = quantity
-			cnt++
 		}
 	}
-	return policies, cnt
+	return policies
 }
 
 func (v Value) AssetsExceptAdaCount() uint32 {

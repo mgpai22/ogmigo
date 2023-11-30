@@ -23,7 +23,7 @@ func Test_AssetsExceptADA(t *testing.T) {
 		},
 	}
 
-	a, _ := v.AssetsExceptAda()
+	a := v.AssetsExceptAda()
 	fmt.Printf("%v\n", a)
 	assert.EqualValues(t, a, Value{
 		"policy1": {
@@ -56,4 +56,33 @@ func Test_Enough(t *testing.T) {
 	}
 	ok, _ := Enough(have, want)
 	assert.False(t, ok)
+}
+
+func Test_AddAsset(t *testing.T) {
+	v1 := Value{
+		"ada": {
+			"lovelace": num.Uint64(1),
+		},
+		"da8c30857834c6ae7203935b89278c532b3995245295456f993e1d24": {
+			"4c51": num.Uint64(14310359231),
+		},
+	}
+	var v2 Value
+	v2.AddAsset(
+		Coin{AssetId: AdaAssetID, Amount: num.Uint64(1)},
+		Coin{AssetId: FromSeparate("da8c30857834c6ae7203935b89278c532b3995245295456f993e1d24", "4c51"), Amount: num.Uint64(14310359231)},
+	)
+	var v3 Value
+	v3.AddAsset(
+		Coin{AssetId: FromSeparate("da8c30857834c6ae7203935b89278c532b3995245295456f993e1d24", "4c51"), Amount: num.Uint64(14310359231)},
+	)
+
+	assert.EqualValues(t, v1, v2)
+	assert.EqualValues(t, 1, v2.AssetsExceptAdaCount())
+	assert.EqualValues(t, true, v2.IsAdaPresent())
+	assert.EqualValues(t, num.Uint64(1), v2.AssetAmount(AdaAssetID))
+	assert.EqualValues(t, num.Uint64(14310359231), v2.AssetAmount(FromSeparate("da8c30857834c6ae7203935b89278c532b3995245295456f993e1d24", "4c51")))
+	assert.EqualValues(t, num.Uint64(0), v2.AssetAmount(FromSeparate("ea8c30857834c6ae7203935b89278c532b3995245295456f993e1d24", "4c51")))
+	assert.EqualValues(t, num.Uint64(0), v2.AssetAmount(FromSeparate("da8c30857834c6ae7203935b89278c532b3995245295456f993e1d24", "4c52")))
+	assert.EqualValues(t, false, v3.IsAdaPresent())
 }
