@@ -19,6 +19,9 @@ const (
 )
 
 func FromSeparate(policy string, assetName string) AssetID {
+	if assetName == "" {
+		return AssetID(policy)
+	}
 	return AssetID(fmt.Sprintf("%v.%v", policy, assetName))
 }
 
