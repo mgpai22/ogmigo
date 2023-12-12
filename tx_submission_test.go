@@ -33,7 +33,7 @@ func TestClient_SubmitTx(t *testing.T) {
 
 	ctx := context.Background()
 	client := New(WithEndpoint(endpoint), WithLogger(DefaultLogger))
-	err := client.SubmitTx(ctx, "00010203")
+	_, err := client.SubmitTx(ctx, "00010203")
 	if err == nil {
 		t.Fatalf("expected error, got %v", err)
 	}
