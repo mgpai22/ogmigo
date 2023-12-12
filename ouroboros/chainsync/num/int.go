@@ -56,6 +56,10 @@ func (i Int) BigInt() *big.Int {
 	return &bi
 }
 
+func (i Int) BigFloat() *big.Float {
+	return big.NewFloat(0).SetInt(i.BigInt())
+}
+
 func (i Int) Int() int {
 	return int(i.BigInt().Int64())
 }

@@ -251,6 +251,13 @@ func InputsFromV6(t chainsync.TxIns) TxInsV5 {
 	return txIns
 }
 
+func InputFromV6(t chainsync.TxIn) TxInV5 {
+	return TxInV5{
+		TxHash: t.Transaction.ID,
+		Index:  t.Index,
+	}
+}
+
 type TxInV5 struct {
 	TxHash string `json:"txId"  dynamodbav:"txId"`
 	Index  int    `json:"index" dynamodbav:"index"`
