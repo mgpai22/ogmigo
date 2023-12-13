@@ -61,8 +61,6 @@ func (c *Client) SubmitTx(ctx context.Context, data string) (s *SubmitTxResponse
 		return nil, fmt.Errorf("failed to submit TX: %w", err)
 	}
 
-	fmt.Printf("OGMIGO SubmitTx response: %v\n", raw)
-
 	return readSubmitTx(raw)
 }
 
