@@ -101,6 +101,7 @@ func (t TxV5) ConvertToV6() chainsync.Tx {
 
 	cbor, _ := base64.StdEncoding.DecodeString(t.Raw)
 	cborHex := hex.EncodeToString(cbor)
+	network := hex.EncodeToString(t.Body.Network)
 	tx := chainsync.Tx{
 		ID:                       t.ID,
 		Spends:                   t.InputSource,
@@ -115,7 +116,7 @@ func (t TxV5) ConvertToV6() chainsync.Tx {
 		Fee:                      chainsync.Lovelace{Lovelace: t.Body.Fee},
 		ValidityInterval:         t.Body.ValidityInterval.ConvertToV6(),
 		Mint:                     t.Body.Mint.ConvertToV6(),
-		Network:                  t.Body.Network,
+		Network:                  &network,
 		ScriptIntegrityHash:      t.Body.ScriptIntegrityHash,
 		RequiredExtraSignatories: t.Body.RequiredExtraSignatures,
 		RequiredExtraScripts:     nil,
@@ -183,6 +184,10 @@ func TxFromV6(t chainsync.Tx) TxV5 {
 		}
 	}
 
+	network, err := hex.DecodeString(*t.Network)
+	if err != nil {
+		network = []byte("")
+	}
 	tx := TxV5{
 		ID:          t.ID,
 		InputSource: t.Spends,
@@ -198,7 +203,7 @@ func TxFromV6(t chainsync.Tx) TxV5 {
 			Fee:                     t.Fee.Lovelace,
 			ValidityInterval:        ValidityIntervalFromV6(t.ValidityInterval),
 			Mint:                    &mint,
-			Network:                 t.Network,
+			Network:                 network,
 			ScriptIntegrityHash:     t.ScriptIntegrityHash,
 			RequiredExtraSignatures: t.RequiredExtraSignatories,
 			Update:                  t.Proposals,
@@ -217,7 +222,7 @@ type TxBodyV5 struct {
 	Fee                     num.Int            `json:"fee,omitempty"                     dynamodbav:"fee,omitempty"`
 	Inputs                  TxInsV5            `json:"inputs,omitempty"                  dynamodbav:"inputs,omitempty"`
 	Mint                    *ValueV5           `json:"mint,omitempty"                    dynamodbav:"mint,omitempty"`
-	Network                 *string            `json:"network,omitempty"                 dynamodbav:"network,omitempty"`
+	Network                 json.RawMessage    `json:"network,omitempty"                 dynamodbav:"network,omitempty"`
 	Outputs                 TxOutsV5           `json:"outputs,omitempty"                 dynamodbav:"outputs,omitempty"`
 	RequiredExtraSignatures []string           `json:"requiredExtraSignatures,omitempty" dynamodbav:"requiredExtraSignatures,omitempty"`
 	ScriptIntegrityHash     string             `json:"scriptIntegrityHash,omitempty"     dynamodbav:"scriptIntegrityHash,omitempty"`
