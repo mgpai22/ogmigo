@@ -184,9 +184,9 @@ func TxFromV6(t chainsync.Tx) TxV5 {
 		}
 	}
 
-	network, err := hex.DecodeString(*t.Network)
-	if err != nil {
-		network = []byte("")
+	network := []byte("")
+	if t.Network != nil {
+		network, _ = hex.DecodeString(*t.Network)
 	}
 	tx := TxV5{
 		ID:          t.ID,
