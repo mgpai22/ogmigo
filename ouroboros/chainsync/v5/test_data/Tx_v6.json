@@ -125,7 +125,7 @@
     },
     "signatories": [
         {
-            "addressAttributes": "2F0=",
+            "addressAttributes": "2f",
             "chainCode": "12340000",
             "key": "d88f6028cc3d6d335115de3737bc2fe80a9a57a21a2c7c228ebc33b222e0897b",
             "signature": "feb447eca6b819f88b4b6aac81a97200121dd4451bfccb65f73d31de296b5402eead42848808633ad1d4afbfad3a2f1967ce65516adca5cd373673f758a9c096"

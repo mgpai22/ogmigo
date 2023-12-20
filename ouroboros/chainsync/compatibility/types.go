@@ -197,8 +197,7 @@ func (c *CompatibleResponsePraos) UnmarshalJSON(data []byte) error {
 
 func (c CompatibleResponsePraos) MarshalJSON() ([]byte, error) {
 	six := chainsync.ResponsePraos(c)
-	five := v5.ResponseFromV6(six)
-	return json.Marshal(&five)
+	return json.Marshal(v5.ResponseFromV6(six))
 }
 
 func (c *CompatibleResponsePraos) UnmarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) error {
@@ -374,4 +373,66 @@ func (c CompatibleResult) MarshalDynamoDBAttributeValue(item *dynamodb.Attribute
 		return c.FindIntersection.MarshalDynamoDBAttributeValue(item)
 	}
 	return fmt.Errorf("unable to marshal empty result")
+}
+
+// v5 and v6 transactions universally.
+type CompatibleTx chainsync.Tx
+
+// Deserialize either v5 or v6 values
+func (c *CompatibleTx) UnmarshalJSON(data []byte) error {
+	// Assume v6 responses first, then fall back to manual v5 processing.
+	var tx chainsync.Tx
+	err := json.Unmarshal(data, &tx)
+
+	// We check spends here, as that key is distinct from the other result types.
+	if err == nil && tx.Spends != "" {
+		*c = CompatibleTx(tx)
+		return nil
+	}
+
+	var txV5 v5.TxV5
+	err = json.Unmarshal(data, &txV5)
+	if err == nil && txV5.Raw != "" {
+		*c = CompatibleTx(txV5.ConvertToV6())
+		return nil
+	} else {
+		return fmt.Errorf("unable to parse as either v5 or v6 Tx: %w", err)
+	}
+}
+
+// For now, serialize as v5
+func (c CompatibleTx) MarshalJSON() ([]byte, error) {
+	six := chainsync.Tx(c)
+	five := v5.TxFromV6(six)
+	return json.Marshal(&five)
+}
+
+func (c *CompatibleTx) UnmarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) error {
+	var tx chainsync.Tx
+	err := dynamodbattribute.Unmarshal(item, &tx)
+	// We check spends here, as that key is distinct from the other result types.
+	if err == nil && tx.Spends != "" {
+		*c = CompatibleTx(tx)
+		return nil
+	}
+
+	var txV5 v5.TxV5
+	err = dynamodbattribute.Unmarshal(item, &txV5)
+	if err == nil && txV5.Raw != "" {
+		*c = CompatibleTx(txV5.ConvertToV6())
+		return nil
+	} else {
+		return fmt.Errorf("unable to parse as either v5 or v6 Tx: %w", err)
+	}
+}
+
+func (c CompatibleTx) MarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) error {
+	f := v5.TxFromV6(chainsync.Tx(c))
+
+	av, err := dynamodbattribute.Marshal(&f)
+	if err != nil {
+		return err
+	}
+	*item = *av
+	return nil
 }

@@ -45,6 +45,11 @@ type TxV5 struct {
 	Raw string `json:"raw,omitempty" dynamodbav:"raw,omitempty"`
 }
 
+// CAVEAT: v5->v6 conversion is, to some degree, best-effort-only. For example, some fields
+// in v6 (e.g., "requiredExtraScripts" and "votes") either aren't represented in v5 or
+// are represented such that it's very difficult, if not impossible, to determine if
+// it's okay to populate the relevant fields in v6. (Example: The "scripts" field in v5
+// and v6 may contain scripts that aren't considered required in v6.)
 func (t TxV5) ConvertToV6() chainsync.Tx {
 	withdrawals := map[string]chainsync.Lovelace{}
 	for txid, amt := range t.Body.Withdrawals {
@@ -101,7 +106,10 @@ func (t TxV5) ConvertToV6() chainsync.Tx {
 
 	cbor, _ := base64.StdEncoding.DecodeString(t.Raw)
 	cborHex := hex.EncodeToString(cbor)
-	network := hex.EncodeToString(t.Body.Network)
+	mint := shared.Value{}
+	if t.Body.Mint != nil {
+		mint = t.Body.Mint.ConvertToV6()
+	}
 	tx := chainsync.Tx{
 		ID:                       t.ID,
 		Spends:                   t.InputSource,
@@ -115,8 +123,8 @@ func (t TxV5) ConvertToV6() chainsync.Tx {
 		Withdrawals:              withdrawals,
 		Fee:                      chainsync.Lovelace{Lovelace: t.Body.Fee},
 		ValidityInterval:         t.Body.ValidityInterval.ConvertToV6(),
-		Mint:                     t.Body.Mint.ConvertToV6(),
-		Network:                  &network,
+		Mint:                     mint,
+		Network:                  string(t.Body.Network),
 		ScriptIntegrityHash:      t.Body.ScriptIntegrityHash,
 		RequiredExtraSignatories: t.Body.RequiredExtraSignatures,
 		RequiredExtraScripts:     nil,
@@ -184,10 +192,7 @@ func TxFromV6(t chainsync.Tx) TxV5 {
 		}
 	}
 
-	network := []byte("")
-	if t.Network != nil {
-		network, _ = hex.DecodeString(*t.Network)
-	}
+	network := []byte(t.Network)
 	tx := TxV5{
 		ID:          t.ID,
 		InputSource: t.Spends,

@@ -368,42 +368,35 @@ func TestDynamoDBMarshal(t *testing.T) {
 		assert.EqualValues(t, compatible, got.ConvertToV6())
 	})
 	// If we need a compatible Tx type, uncomment this test
-	/*
-	   t.Run("Tx v5", func(t *testing.T) {
-	      rawData, err := os.ReadFile("test_data/Tx_v5.json")
-	      assert.Nil(t, err)
+	t.Run("Tx v5", func(t *testing.T) {
+		rawData, err := os.ReadFile("test_data/Tx_v5.json")
+		assert.Nil(t, err)
 
-	      var compatible CompatibleTx
-	      err = json.Unmarshal(rawData, &compatible)
-	      assert.Nil(t, err)
+		var compatible CompatibleTx
+		err = json.Unmarshal(rawData, &compatible)
+		assert.Nil(t, err)
 
-	      av, err := dynamodbattribute.Marshal(&compatible)
-	      assert.Nil(t, err)
-	      assert.NotNil(t, av.M)
+		av, err := dynamodbattribute.Marshal(&compatible)
+		assert.Nil(t, err)
+		assert.NotNil(t, av.M)
 
-	      var got v5.TxV5
-	      err = dynamodbattribute.Unmarshal(av, &got)
-	      assert.Nil(t, err)
-	      assert.EqualValues(t, compatible, got.ConvertToV6())
-	   })
-	   t.Run("Tx v6", func(t *testing.T) {
-	      rawData, err := os.ReadFile("test_data/Tx_v6.json")
-	      assert.Nil(t, err)
+		var got v5.TxV5
+		err = dynamodbattribute.Unmarshal(av, &got)
+		assert.Nil(t, err)
+		assert.EqualValues(t, compatible, got.ConvertToV6())
+	})
+	t.Run("Tx v6", func(t *testing.T) {
+		rawData, err := os.ReadFile("test_data/Tx_v6.json")
+		assert.Nil(t, err)
 
-	      var compatible CompatibleTx
-	      err = json.Unmarshal(rawData, &compatible)
-	      assert.Nil(t, err)
+		var compatible CompatibleTx
+		err = json.Unmarshal(rawData, &compatible)
+		assert.Nil(t, err)
 
-	      av, err := dynamodbattribute.Marshal(&compatible)
-	      assert.Nil(t, err)
-	      assert.NotNil(t, av.M)
-
-	      var got v5.TxV5
-	      err = dynamodbattribute.Unmarshal(av, &got)
-	      assert.Nil(t, err)
-	      assert.EqualValues(t, compatible, got.ConvertToV6())
-	   })
-	*/
+		av, err := dynamodbattribute.Marshal(&compatible)
+		assert.Nil(t, err)
+		assert.NotNil(t, av.M)
+	})
 }
 
 func TestSerializeCompatibleValue(t *testing.T) {

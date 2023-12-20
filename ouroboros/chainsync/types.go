@@ -458,7 +458,7 @@ type Tx struct {
 	Fee                      Lovelace            `json:"fee,omitempty"                      dynamodbav:"fee,omitempty"`
 	ValidityInterval         ValidityInterval    `json:"validityInterval"                   dynamodbav:"validityInterval,omitempty"`
 	Mint                     shared.Value        `json:"mint,omitempty"                     dynamodbav:"mint,omitempty"`
-	Network                  *string             `json:"network,omitempty"                  dynamodbav:"network,omitempty"`
+	Network                  string              `json:"network,omitempty"                  dynamodbav:"network,omitempty"`
 	ScriptIntegrityHash      string              `json:"scriptIntegrityHash,omitempty"      dynamodbav:"scriptIntegrityHash,omitempty"`
 	RequiredExtraSignatories []string            `json:"requiredExtraSignatories,omitempty" dynamodbav:"requiredExtraSignatories,omitempty"`
 	RequiredExtraScripts     []string            `json:"requiredExtraScripts,omitempty"     dynamodbav:"requiredExtraScripts,omitempty"`
