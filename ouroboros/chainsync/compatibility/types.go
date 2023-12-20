@@ -418,7 +418,7 @@ func (c *CompatibleTx) UnmarshalDynamoDBAttributeValue(item *dynamodb.AttributeV
 
 	var txV5 v5.TxV5
 	err = dynamodbattribute.Unmarshal(item, &txV5)
-	if err == nil && txV5.Raw != "" {
+	if err == nil {
 		*c = CompatibleTx(txV5.ConvertToV6())
 		return nil
 	} else {
