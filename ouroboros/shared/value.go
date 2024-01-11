@@ -216,8 +216,18 @@ type Coin struct {
 	Amount  num.Int
 }
 
+func CreateAdaCoin(amt num.Int) Coin {
+	return Coin{AssetId: AdaAssetID, Amount: amt}
+}
+
 func ValueFromCoins(coins ...Coin) Value {
 	value := Value{}
 	value.AddAsset(coins...)
+	return value
+}
+
+func CreateAdaValue(amt int64) Value {
+	value := Value{}
+	value.AddAsset(CreateAdaCoin(num.Int64(amt)))
 	return value
 }

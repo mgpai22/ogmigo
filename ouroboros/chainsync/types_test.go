@@ -373,7 +373,7 @@ func TestPraosResponse(t *testing.T) {
 				},
 				"transactions": [
 					{
-						"id": "c10ba8d6ba64a43067b6ccae8e20105cbb7e0dab45c16e8b4b2490c7f2575dbf",
+						"id": "9cd28711da282cb87cb9252e123f48c7b069619fc5f9d5bddeac0b11bbcf9d31",
 						"spends": "collaterals",
 						"inputs": [
 							{
@@ -420,10 +420,10 @@ func TestPraosResponse(t *testing.T) {
 								"address": "addr_test1xz8kaamzwgl7qeqezvk28jc7xwqt96lymetwhpfpltlc9fyx5z9682dlu90yaaz8lygzge8tt0jnpwfsp7hj0vydp9tq7jw5p3",
 								"value": {
 									"ada": {
-										"lovelace": 2734681338072915340
+										"lovelace": 6599517526229999871
 									},
 									"4a1c412d8e2b3015a7fb7d382808fb7cb721bf93a56e8bb6661cdebe": {
-										"a57b": 3969779072528401418
+										"a57b": 1
 									}
 								},
 								"datum": "43e33bf3",
@@ -466,10 +466,10 @@ func TestPraosResponse(t *testing.T) {
 							"address": "addr1y84cdp4x2n26uvlfe4txmnh0d37aunsf8evrlmwurpspw8zfh9mnrddv54u9lq8qpy09qcpupu2fnks5nwpknrm7vjps2vpr04",
 							"value": {
 								"ada": {
-									"lovelace": 5724148192744198172
+									"lovelace": 0
 								},
 								"2e12c5e499e0521b13837391beed1248a2e36117370662ee75918b56": {
-									"35ab47a811413c": 2971153819476395723
+									"35ab47a811413c": 4946671062515366198
 								}
 							},
 							"datumHash": "c96ef3b6d4f5f5e1011391687a0c30bd5902342a257c945027af5524736e3996",
@@ -488,7 +488,9 @@ func TestPraosResponse(t *testing.T) {
 							}
 						},
 						"totalCollateral": {
-							"lovelace": 927637
+							"ada": {
+								"lovelace": 927637
+							}
 						},
 						"mint": {
 							"be8dc1ca8b6b1735175a24b3b3c39d7327aba843c16a9b99924f3476": {
@@ -497,7 +499,9 @@ func TestPraosResponse(t *testing.T) {
 						},
 						"network": "mainnet",
 						"fee": {
-							"lovelace": 752644
+							"ada": {
+								"lovelace": 752644
+							}
 						},
 						"validityInterval": {
 							"invalidBefore": 7,
@@ -509,13 +513,19 @@ func TestPraosResponse(t *testing.T) {
 									"type": "treasuryWithdrawals",
 									"withdrawals": {
 										"64519ff082ace5007781306a885bf04a6dfc6df57fe486d3d98b7cb5": {
-											"lovelace": -659851
+											"ada": {
+												"lovelace": -659851
+											}
 										},
 										"7e0531fb0ec714b6080d437377c91a56d3c4351e32ca2b27dd1f0195": {
-											"lovelace": 168719
+											"ada": {
+												"lovelace": 168719
+											}
 										},
 										"9c444af5980051bfc60ef4a54068cae4ba543461c8bd37b0c174c9b7": {
-											"lovelace": -562643
+											"ada": {
+												"lovelace": -562643
+											}
 										}
 									}
 								}
@@ -546,32 +556,44 @@ func TestPraosResponse(t *testing.T) {
 						"datums": {
 							"2208e439244a1d0ef238352e3693098aba9de9dd0154f9056551636c8ed15dc1": "23"
 						},
-						"redeemers": {
-							"spend:4": {
+						"redeemers": [
+							{
+								"validator": {
+									"index": 4,
+									"purpose": "spend"
+								},
 								"redeemer": "a5239fd87d9f004023014273aeff9f00418b2143ee26a901ffffa1d87d9f43bafcf405ff425ccc029fd87c9f40ff446e943aa9d87e9f4375079e4318997905054197ffff23a3d87d9f43ca6d3e044233884206eb20ff0505a2024022019f43570e4322402324ff9f423456ff01d87c9fd87e9f01ff9f01ffff00",
 								"executionUnits": {
 									"memory": 5528516116957021378,
 									"cpu": 3267967087510563235
 								}
 							},
-							"mint:2": {
+							{
+								"validator": {
+									"index": 2,
+									"purpose": "mint"
+								},
 								"redeemer": "d87b9f219f232041de009f44d47dc270ffffa3d87a9f0521ffa2024127054404aa1521d87980a24040444097f3a504d87d9f425ca843eb4ac704445f938c0905ff9f03ffa021ff",
 								"executionUnits": {
 									"memory": 5484661661513700435,
 									"cpu": 3616344145952188136
 								}
 							},
-							"withdrawal:2": {
+							{
+								"validator": {
+									"index": 2,
+									"purpose": "withdraw"
+								},
 								"redeemer": "d87c9f9f80a12442533fffa1d87d9f0201ffd8799f01ffff",
 								"executionUnits": {
 									"memory": 2494865883185442907,
 									"cpu": 4035456766489310695
 								}
 							}
-						}
+						]
 					},
 					{
-						"id": "b12bdf08cfb6140102b9d6105f982da6ff91943ae445bf052c92234728958b92",
+						"id": "8dbba7a7bc4314310a39570be19390cdbb97c587aecd7ab9bfcb02d67ae68e90",
 						"spends": "inputs",
 						"inputs": [],
 						"references": [
@@ -605,10 +627,10 @@ func TestPraosResponse(t *testing.T) {
 								"address": "addr_test1xqzw54uwqf90cd4ujrnk4ll2xqp23ud5z8uf0ux8jdvrela8ntznpfc7svwwr0ak5jj3j060dw09nvtrhnr4l803puyscse43f",
 								"value": {
 									"ada": {
-										"lovelace": 1771848557320187307
+										"lovelace": 1570446258331790065
 									},
 									"d2a51a7e7678a02de266788af63481ebaa437626cc87b8bf85d25f25": {
-										"36": 6334119551650706257
+										"36": 1
 									}
 								},
 								"datumHash": "8c19ef57d6180c563bd5f54f354aebc865fb07ca98b2cb4c62e1983575bba82f",
@@ -667,10 +689,10 @@ func TestPraosResponse(t *testing.T) {
 								"address": "addr1q9j6nk52759cv5dxxftfe4f2e3xqj0c4l7de0q5s6ecjqxdgxqe77rzpgudpjhjxms864zgxzmn4n4mqf60tdypqs8qssnn3cd",
 								"value": {
 									"ada": {
-										"lovelace": 14122285556284450
+										"lovelace": 0
 									},
 									"2e12c5e499e0521b13837391beed1248a2e36117370662ee75918b56": {
-										"36d0f791518dfc7bdaa008ac496a96aa51258194ff9dfe52482d0ded489884": 672336696701854863
+										"36d0f791518dfc7bdaa008ac496a96aa51258194ff9dfe52482d0ded489884": 2
 									}
 								},
 								"datumHash": "e60700a4bdc5696f3b9162bb5bd6ca0bd0ed3d94a34e63d1ccaff374929efce6"
@@ -679,10 +701,10 @@ func TestPraosResponse(t *testing.T) {
 								"address": "addr_test1yrq9ayusqmlj862fzupd0euqrgugmv3punx9ya6fhfmkuju898c4uwkye65pt7tya9l43z3hevhadu5dj46gddfpa8hq6mzgtd",
 								"value": {
 									"ada": {
-										"lovelace": 913241529029639917
+										"lovelace": 0
 									},
 									"2db8410d969b6ad6b6969703c77ebf6c44061aa51c5d6ceba46557e2": {
-										"504f4bba25991217": 8142521844435523815
+										"504f4bba25991217": 3183844862761547728
 									}
 								},
 								"datumHash": "0519e3b4094e19f636e21e8363561511f79f4522f45c4407798265e8814ea4e6",
@@ -726,17 +748,19 @@ func TestPraosResponse(t *testing.T) {
 							{
 								"type": "genesisDelegation",
 								"delegate": {
-									"id": "571e042583907e06ba31d5f9e54603866e84733927341e23129a4f5a"
+									"id": "571e042583907e06ba31d5f9e54603866e84733927341e23129a4f5a",
+									"vrfVerificationKeyHash": "f577eed815c23dbb12f108a478b640631cab09a45bfb766597191bb0d73709af"
 								},
 								"issuer": {
-									"id": "fd85ee08154b867f0f8c6ed7a30ae37b3f85709421ddfbad913ea5a8",
-									"vrfVerificationKeyHash": "f577eed815c23dbb12f108a478b640631cab09a45bfb766597191bb0d73709af"
+									"id": "fd85ee08154b867f0f8c6ed7a30ae37b3f85709421ddfbad913ea5a8"
 								}
 							}
 						],
 						"withdrawals": {
 							"stake_test1uqnd9um8wq9tkss02tmgkvz5t7zhcgcafkr8mujaelkdvgg06hp3t": {
-								"lovelace": 386198
+								"ada": {
+									"lovelace": 386198
+								}
 							}
 						},
 						"mint": {
@@ -753,7 +777,9 @@ func TestPraosResponse(t *testing.T) {
 						"network": "testnet",
 						"scriptIntegrityHash": "8041fd1e79eb03cc137e4ac04c353772ab29526a346a0814969c05eb8cdbb969",
 						"fee": {
-							"lovelace": 552489
+							"ada": {
+								"lovelace": 552489
+							}
 						},
 						"validityInterval": {
 							"invalidBefore": 5
@@ -765,7 +791,9 @@ func TestPraosResponse(t *testing.T) {
 									"source": "reserves",
 									"target": "treasury",
 									"value": {
-										"lovelace": 756310
+										"ada": {
+											"lovelace": 756310
+										}
 									}
 								}
 							},
@@ -775,7 +803,9 @@ func TestPraosResponse(t *testing.T) {
 									"source": "reserves",
 									"target": "treasury",
 									"value": {
-										"lovelace": 730347
+										"ada": {
+											"lovelace": 730347
+										}
 									}
 								}
 							}
@@ -800,25 +830,33 @@ func TestPraosResponse(t *testing.T) {
 								"addressAttributes": "eb635f"
 							}
 						],
-						"redeemers": {
-							"spend:3": {
+						"redeemers": [
+							{
+								"validator": {
+									"index": 3,
+									"purpose": "spend"
+								},
 								"redeemer": "44ecd6996f",
 								"executionUnits": {
 									"memory": 5012437254351683362,
 									"cpu": 8543895173845936757
 								}
 							},
-							"mint:6": {
+							{
+								"validator": {
+									"index": 6,
+									"purpose": "mint"
+								},
 								"redeemer": "a3d87a9fa12201ff447a1bbfb842422da4437b5ab10242c05340a0a5224310eb56444ba4d7bc41872000054299ea2140234044f384dfd4427f58",
 								"executionUnits": {
 									"memory": 5139577675069485071,
 									"cpu": 1480105547444861962
 								}
 							}
-						}
+						]
 					},
 					{
-						"id": "50d9feb6e45a13f5a856913b9c6d1b63c2abc03aaabebe4055c46561d0664f0e",
+						"id": "aec47db7562b8a301d44cc19940ea128718b6df4564975df07614523ae0d03ca",
 						"spends": "collaterals",
 						"inputs": [
 							{
@@ -885,10 +923,10 @@ func TestPraosResponse(t *testing.T) {
 							"address": "addr1v9s8auaf7xrwcknzzg9ftysuhwe87qw8xg2gmcwd4l3v6dqg6ajma",
 							"value": {
 								"ada": {
-									"lovelace": 3480152061470011281
+									"lovelace": 0
 								},
 								"65d910ddf94a9322d06c0719cb9fcb541d6a2ddf44d83071bcfcdbb0": {
-									"d93c48b6d1baa662b59e5fb646c2ddafa15afbef5abfbe65d60e1711": 8472747137708736150
+									"d93c48b6d1baa662b59e5fb646c2ddafa15afbef5abfbe65d60e1711": 2653892454332976533
 								}
 							},
 							"script": {
@@ -910,10 +948,14 @@ func TestPraosResponse(t *testing.T) {
 						],
 						"withdrawals": {
 							"stake17xd7s38syqung8dqh2eu9erwcejda2y0njle0tt880ljunq6glahd": {
-								"lovelace": 893298
+								"ada": {
+									"lovelace": 893298
+								}
 							},
 							"stake1uxjy7wsp5ct2kjcpv7sec9mv6zm24mgyu4ls0rlj9rlp0wsvwx7xg": {
-								"lovelace": 367880
+								"ada": {
+									"lovelace": 367880
+								}
 							}
 						},
 						"mint": {
@@ -926,7 +968,9 @@ func TestPraosResponse(t *testing.T) {
 						],
 						"network": "mainnet",
 						"fee": {
-							"lovelace": 276885
+							"ada": {
+								"lovelace": 276885
+							}
 						},
 						"validityInterval": {
 							"invalidBefore": 6
@@ -1052,25 +1096,33 @@ func TestPraosResponse(t *testing.T) {
 						"datums": {
 							"704f836b6b652f423d42ce3232f5e82875172fc7e00f8bc27d84c2445a3a0341": "a2039f9f42640922ff9f423531230144c4e8777003ff22a2404448eb4b9a44157dad2d249f425b5e40ffff41a2d87c9fd87d80ff"
 						},
-						"redeemers": {
-							"mint:6": {
+						"redeemers": [
+							{
+								"validator": {
+									"index": 6,
+									"purpose": "mint"
+								},
 								"redeemer": "d87c80",
 								"executionUnits": {
 									"memory": 8801224258524349976,
 									"cpu": 6616915720093090519
 								}
 							},
-							"certificate:4": {
+							{
+								"validator": {
+									"index": 4,
+									"purpose": "publish"
+								},
 								"redeemer": "d87a80",
 								"executionUnits": {
 									"memory": 6358196380493345925,
 									"cpu": 8390607135841051777
 								}
 							}
-						}
+						]
 					},
 					{
-						"id": "7b5bdfa67d06142497c05d76bb6b9e98364e917637afbe764feee164ec055bb2",
+						"id": "811794abd0c2dedca0612900a9b266e23b5fcd75e001e7856206f2bcaf220c88",
 						"spends": "collaterals",
 						"inputs": [
 							{
@@ -1111,10 +1163,10 @@ func TestPraosResponse(t *testing.T) {
 								"address": "addr1z9rnpqh8akpysrf06r6hulwra7ppa8vrad293anjnd4stlgpej9pf4gc58c8tqskgxzjvapy5cfddf7ekvxlm9nwh4es0ppw0u",
 								"value": {
 									"ada": {
-										"lovelace": 2577659174567767534
+										"lovelace": 0
 									},
 									"4a1c412d8e2b3015a7fb7d382808fb7cb721bf93a56e8bb6661cdebe": {
-										"4e30b6e8803fa5467064ca01ffff": 7590109741623188812
+										"4e30b6e8803fa5467064ca01ffff": 1
 									}
 								},
 								"datumHash": "40985f20209c7e1882d7c241e596838ac574e6e25aef587f1820b37d8259a199",
@@ -1145,10 +1197,10 @@ func TestPraosResponse(t *testing.T) {
 							"address": "2cWKMJemoBajSt8TNJTf1YchyTTE9BjSufoWMSenBPVx91obrA2GzC8JQKtwwu24vKXdd",
 							"value": {
 								"ada": {
-									"lovelace": 3850919099990513683
+									"lovelace": 2960440386428397936
 								},
 								"98977cab9ebd32f98e2752d205da6748005f9c253fee025fcb06457d": {
-									"455d1f01": 6853692791036578420
+									"455d1f01": 1
 								}
 							},
 							"datumHash": "52e84f75d61dbf5137d2d307ad2f058fb71ae1d2508bd5eb49b5e33b52caeffc",
@@ -1161,7 +1213,9 @@ func TestPraosResponse(t *testing.T) {
 							}
 						},
 						"totalCollateral": {
-							"lovelace": 405778
+							"ada": {
+								"lovelace": 405778
+							}
 						},
 						"mint": {
 							"b0c53e2bf180858da4b64eb5598c5615bba7d723d2b604a83b7f9165": {
@@ -1171,7 +1225,9 @@ func TestPraosResponse(t *testing.T) {
 						"network": "mainnet",
 						"scriptIntegrityHash": "51111abd93b1784d20d198f3d1c5743a172520ab6e095819f73a7dbf211e0d91",
 						"fee": {
-							"lovelace": 356829
+							"ada": {
+								"lovelace": 356829
+							}
 						},
 						"validityInterval": {
 							"invalidBefore": 4,
@@ -1211,29 +1267,41 @@ func TestPraosResponse(t *testing.T) {
 						"datums": {
 							"368f9390a7c19125f0e73cd5e26d40f7de9c43aa39bc6f83ccdccaed5a94cbb1": "a2a441b6a30141904206b321443ed7069405442164818343e97fc905d87b8080d87a9f0444875c79bb40ffa39f42dbef03ff9f41732124ff00a2040144c2ae37fb014196d87d9f44fac271c8ff01a203d87e9f0542dee84024ff9f43e60f0641bb44ecc3ee7000421b1dff9f000421ff"
 						},
-						"redeemers": {
-							"spend:6": {
+						"redeemers": [
+							{
+								"validator": {
+									"index": 6,
+									"purpose": "spend"
+								},
 								"redeemer": "02",
 								"executionUnits": {
 									"memory": 8173834249442977306,
 									"cpu": 4076336471699615579
 								}
 							},
-							"mint:3": {
+							{
+								"validator": {
+									"index": 3,
+									"purpose": "mint"
+								},
 								"redeemer": "9f2440ff",
 								"executionUnits": {
 									"memory": 2815464405602228167,
 									"cpu": 9135073017538346060
 								}
 							},
-							"mint:7": {
+							{
+								"validator": {
+									"index": 7,
+									"purpose": "mint"
+								},
 								"redeemer": "42ba47",
 								"executionUnits": {
 									"memory": 7350280539456537937,
 									"cpu": 474227869721943704
 								}
 							}
-						}
+						]
 					}
 				]
 			},

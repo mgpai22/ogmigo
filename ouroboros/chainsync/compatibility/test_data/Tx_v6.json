@@ -1,5 +1,5 @@
 {
-    "id": "db82d91485a628e3732f881c79199c01ece029398329121231296e5c4ca827c6",
+    "id": "58924fded958dda8a7ac6a120f00eea7e7374ff8ce54751e4ce9db689604b90c",
     "spends": "collaterals",
     "inputs": [
         {
@@ -20,10 +20,10 @@
             "address": "addr1gx2fe5rhglqrcgf2cpn0fyuvh2cy97ax0lz3v70qv2jmgkczqqqs0pwy02",
             "value": {
                 "ada": {
-                    "lovelace": 312617921725660100
+                    "lovelace": 5471871707173873214
                 },
                 "709fc5abc5df4cfee75360cfa9f3ee7d36d6cb216a0ba4daddb16366": {
-                    "35": 3812892794721600000
+                    "35": 1
                 }
             },
             "datumHash": "3c7a5f2e2f52c4756b9b359b63b316c77e9113f635c8690bb1b506b7c9b890f2"
@@ -32,10 +32,10 @@
             "address": "addr_test1qr0y0q76tdu63exxxfhrcq00u3vpz3jfe0dnevcy5e6tlx23r7kvyuvvj8njqwhrrsv4jsw73uv0apx966rksaa66hzqpu75h5",
             "value": {
                 "ada": {
-                    "lovelace": 3531149964235084000
+                    "lovelace": 2359388962328459812
                 },
                 "2db8410d969b6ad6b6969703c77ebf6c44061aa51c5d6ceba46557e2": {
-                    "f3fae0095e78ccade17ffa547dd9cd839ebe65": 2153730649591039000
+                    "f3fae0095e78ccade17ffa547dd9cd839ebe65": 1
                 }
             },
             "datumHash": "4ad8cd5be6986e6c3eb4d3f942c75e68a8e0be40e405c240781964698fca137c"
@@ -44,10 +44,10 @@
             "address": "addr1q8qgshfmdt5vkx2msf48qtvg3pgurrgxau482m2yyw0c2483lhxjm7kxtt28lhsfkd9mlwtlj3z92nm7zs3m30w7h4hqarsdu2",
             "value": {
                 "ada": {
-                    "lovelace": 4968142171704102000
+                    "lovelace": 6998929950975338793
                 },
                 "467f58932b54910584a0e8ea25a225e06a14530b2e96e938c53a3f22": {
-                    "34": 7989804813950565000
+                    "34": 1
                 }
             },
             "datumHash": "0f768d10304e2488f0cf50cd5c8ac25133291b4bf36db311e7ec19bd7ef9eb65"
@@ -64,25 +64,29 @@
         {
             "type": "genesisDelegation",
             "delegate": {
-                "id": "fdefd8e3beb32cd86c84959f8e156a32a1ba3876ebdd868ad3eefb7c"
+                "id": "fdefd8e3beb32cd86c84959f8e156a32a1ba3876ebdd868ad3eefb7c",
+                "vrfVerificationKeyHash": "15f1292a444fe5aa73f95d9d75e4a1909d6aa05fca22a21174a330232ef41a29"
             },
             "issuer": {
-                "id": "50699ad21903e2cc251fdccb6641b78df70fb5972862a4597a1cb6b4",
-                "vrfVerificationKeyHash": "15f1292a444fe5aa73f95d9d75e4a1909d6aa05fca22a21174a330232ef41a29"
+                "id": "50699ad21903e2cc251fdccb6641b78df70fb5972862a4597a1cb6b4"
             }
         }
     ],
     "withdrawals": {
         "stake_test17qrerkduc7v5vt5mfz4j3vhv667q9lxv4aldhqq6v7cml0gwacue2": {
-            "lovelace": 433263
+            "ada": {
+                "lovelace": 433263
+            }
         },
         "stake178cxrn5h9fqftntssdrjh0kwd6622vlqu3h8r7tl8gnzrhsnvljkg": {
-            "lovelace": 224375
+            "ada": {
+                "lovelace": 224375
+            }
         }
     },
     "mint": {
         "39c7e3a4c1dc6032dc0ea4d471195037c85ed90b31926954cd5446c6": {
-            "1e7a8d28bb1c1988ff842ff101e2e5": 3697388719172431000
+            "1e7a8d28bb1c1988ff842ff101e2e5": 3697388719172430741
         }
     },
     "requiredExtraSignatories": [
@@ -97,7 +101,9 @@
     "network": "mainnet",
     "scriptIntegrityHash": "89fc262c4561ccabd5cfb8a9e30ba3c928b2910829b86096ba771ca387aa1d49",
     "fee": {
-        "lovelace": 464857
+        "ada": {
+            "lovelace": 464857
+        }
     },
     "validityInterval": {
         "invalidBefore": 4,
@@ -110,7 +116,9 @@
                 "source": "treasury",
                 "target": "reserves",
                 "value": {
-                    "lovelace": 142671
+                    "ada": {
+                        "lovelace": 142671
+                    }
                 }
             }
         }

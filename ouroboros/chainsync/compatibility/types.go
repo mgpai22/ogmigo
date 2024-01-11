@@ -273,7 +273,7 @@ func (c *CompatibleValue) UnmarshalJSON(data []byte) error {
 
 	s := shared.Value{}
 	if r5.Coins.BigInt().BitLen() != 0 {
-		s.AddAsset(shared.Coin{AssetId: shared.AdaAssetID, Amount: r5.Coins})
+		s.AddAsset(shared.CreateAdaCoin(r5.Coins))
 	}
 	for asset, coins := range r5.Assets {
 		s.AddAsset(shared.Coin{AssetId: asset, Amount: coins})

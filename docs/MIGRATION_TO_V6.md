@@ -10,8 +10,8 @@ Note that this document is a supplement to [the original Ogmios migration guide]
 There are a handful of caveats that should be considered before reading the main document.
 
 * The Ogmigo v6 upgrade adds no new major functionality beyond v6 struct support and a compatibility layer that allows both v5 and v6 Ogmigo JSON/DB/at-rest data to be unmarshalled into v6 structs. If anything wasn’t supported in Ogmigo v5, it won’t be supported in Ogmigo v6.
-* Support for the Byron era is limited in Ogmigo v6, and may not work as expected. In fact, as of this writing (Nov. 2023), critical functionality, such as the _compatibility_ module, assumes Byron _isn’t_ supported. If you must have Byron support, further Ogmigo work will be required.
-* Any attempt to use a v6-enabled Ogmigo library will automatically break the code using Ogmigo. Many fundamental structs (e.g., _Block_) have been altered to assume v6 structs. If somebody absolutely must use v5 structs, they’ll have to import the _v5_ module and use those structs. Even then, it is highly recommended to use the _compatibility_ module whenever possible, thereby assisting in a smooth transition to the default (v6) code.
+* Support for the Byron era is limited in Ogmigo v6, and may not work as expected. In fact, as of this writing (Jan. 2024), critical functionality, such as the _compatibility_ module, assumes Byron _isn’t_ supported. If you must have Byron support, further Ogmigo work will be required.
+* Any attempt to use a v6-enabled Ogmigo library will, in all likelihood, break the code using Ogmigo out of the box. Many fundamental structs (e.g., _Block_) have been altered to assume v6 structs. If somebody absolutely must use v5 structs, they’ll have to import the _v5_ module and use those structs. Even then, it is highly recommended to use the _compatibility_ module whenever possible, thereby assisting in a smooth transition to the default (v6) code.
 
 # Support for v6
 
@@ -36,13 +36,14 @@ When creating a new `Value`, there are some recommended methods to do so. If cre
 Example code can be found below.
 
 ```go
-// Create some Ada, matching was considered `Coins` in v5 Value instances.
-oneAda := shared.ValueFromCoins(shared.Coin{AssetId: shared.AdaAssetID, Amount: num.Int64(1_000_000)})
+// Create some Ada, matching what was considered `Coins` in v5 Value instances.
+oneAdaCoin  := shared.CreateAdaCoin(num.Int64(1_000_000))
+oneAdaValue := shared.CreateAdaValue(num.Int64(1_000_000))
 
 // Create some Ada and another asset.
 assetId := shared.FromSeparate("policyX", "assetY")
 assetZ := shared.ValueFromCoins(
-    shared.Coin{AssetId: shared.AdaAssetID, Amount: num.Int64(1_000_000)},
+    shared.CreateAdaCoin(num.Int64(1_000_000)),
     shared.Coin{AssetId: assetId, Amount: num.Int64(2_000_000)},
 )
 
@@ -54,7 +55,7 @@ for _, a := range out.Amount {
         if !ok {
             return chainsync.TxOut{}, fmt.Errorf("invalid quantity: %w", err)
         }
-    v.AddAsset(shared.Coin{AssetId: shared.AdaAssetID, Amount: c})
+        v.AddAsset(shared.CreateAdaCoin(c))
     } else {
         policyId := a.Unit[:56]
         assetName := a.Unit[56:]
@@ -75,13 +76,14 @@ A _compatibility_ module has been added to the code. The main purpose of the mod
 There are a couple of caveats that are discussed below.
 
 * The responses have changed between v5 and v6. Specific details are discussed in subsections but your code will need to adjust slightly in order to handle these changes.
-* `Value` compatibility is pretty straightforward. It's just important to note that v6 `Value` structs compress Ada `Coins` from v5 into a double-nested map, alongside all other assets. (The asset ID for ADA is "ada.lovelace".) Take care when attempting to read any assets other than ADA. An example of how to read all non-ADA assets can be seen below.
+* `Value` compatibility is pretty straightforward. It's just important to note that v6 `Value` structs compress Ada `Coins` from v5 into a double-nested map, alongside all other assets. (The asset ID for ADA is `ada.lovelace`.) Take care when attempting to read any assets other than ADA. An example of how to read all non-ADA assets can be seen below.
+* As of Jan. 2024, compatibility objects are marshaled as v5 objects. They will eventually be marshaled as v6 objects.
 
 ```go
 assetId1 := shared.FromSeparate("policyX", "assetY")
 assetId2 := shared.FromSeparate("party", "anchor")
 totalValue := shared.ValueFromCoins(
-    shared.Coin{AssetId: shared.AdaAssetID, Amount: num.Int64(1_000_000)},
+    shared.CreateAdaCoin(num.Int64(1_000_000)),
     shared.Coin{AssetId: assetId1, Amount: num.Int64(2_000_000)},
     shared.Coin{AssetId: assetId2, Amount: num.Int64(3_000_000)},
 )
