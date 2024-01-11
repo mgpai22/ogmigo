@@ -10,7 +10,7 @@
             "proof": "98fbb316e8bbd717ca27325d44eaaf90867b8351a7b9839a1b19e8e6b416791363470f0709ba78f6a5c4f50dee2e6295aa04a4fd125143b0dfdbed7422b6efe49ad4b94c34eb7f434c486e1d803e0b0a"
         },
         "height": 0,
-        "slot": 2,
+        "slot": 0,
         "issuer": {
             "verificationKey": "948b49ced8f0316e7d33a8de788eb3ba3ea88deb2716bf185cae5820591fdabf",
             "vrfVerificationKey": "224655a70fb7d8cb8f900c97f16cfc45645124a1d388b6eaa2c4511ef5da79d8",
@@ -19,7 +19,7 @@
                 "proof": "a2876927ad069b694d87cf070e49f7786ba1312b25dcc501657b545a1297fe0db1627d96d6a3ca7bbf4e8ede19885e4a164bd8d4e31d747fcd05ac63f17af4a58503a6417ce9554724f30b7dada17f05"
             },
             "operationalCertificate": {
-                "count": 0,
+                "count": 4,
                 "kes": {
                     "period": 2,
                     "verificationKey": "b39372534cb0636dfdfcab8e7726aa7bb3160ef9b640a52bb0a043093baa613d"
@@ -37,14 +37,14 @@
         },
         "transactions": [
             {
-                "id": "2bd3c9bb48d587f9a6bccb8230110ba0c536aa05c5966b1a63052b26775db4f4",
+                "id": "3413d974c45856182c284bdc9bf10291a97cdc6dbe5f4a56cf9b8e7ffff32d68",
                 "spends": "inputs",
                 "inputs": [
                     {
                         "transaction": {
                             "id": "7525e434d3b951d3499b87f8cbd02ed0ebb0c0248343af568c29d15e79825bd8"
                         },
-                        "index": 0
+                        "index": 3
                     }
                 ],
                 "outputs": [
@@ -67,14 +67,18 @@
                 ],
                 "withdrawals": {
                     "stake_test17re7uuh9zercugh782esdhp4lspnz6k7sspk7254yagzpwq83d45f": {
-                        "lovelace": 37534
+                        "ada": {
+                            "lovelace": 37534
+                        }
                     }
                 },
                 "fee": {
-                    "lovelace": 737494
+                    "ada": {
+                        "lovelace": 737494
+                    }
                 },
                 "validityInterval": {
-                    "invalidBefore": 1,
+                    "invalidBefore": 2,
                     "invalidAfter": 1
                 },
                 "signatories": [

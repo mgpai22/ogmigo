@@ -75,25 +75,29 @@
                         {
                             "type": "genesisDelegation",
                             "delegate": {
-                                "id": "494fa3cd83702be91b29d667a877e1eccddbbe4d0e9422ae2459fad0"
+                                "id": "494fa3cd83702be91b29d667a877e1eccddbbe4d0e9422ae2459fad0",
+                                "vrfVerificationKeyHash": "ca29e3a74ac74fec0bcd8954ead4acb449ffa2c2ac8a60a4d3e1931ab6ec1b2e"
                             },
                             "issuer": {
-                                "id": "46f68923ce0ef874eec18fbd642014f710f518007cb3d3fb8b13ded0",
-                                "vrfVerificationKeyHash": "ca29e3a74ac74fec0bcd8954ead4acb449ffa2c2ac8a60a4d3e1931ab6ec1b2e"
+                                "id": "46f68923ce0ef874eec18fbd642014f710f518007cb3d3fb8b13ded0"
                             }
                         }
                     ],
                     "withdrawals": {
                         "stake_test1urrqy7dtj3n5snr2nzhat0y3nh7fx7hj45cpzjv42lg5e2sdserua": {
-                            "lovelace": 356934
+                            "ada": {
+                                "lovelace": 356934
+                            }
                         },
                         "stake1u9zpdf4gvr253sut07mh6p09wa8j5rpqjzw92tezfd3y98qk2x86v": {
-                            "lovelace": 578832
+                            "ada": {
+                                "lovelace": 578832
+                            }
                         }
                     },
                     "mint": {
                         "4d50a11e297e7783383bf06dd6e4e481230323bd96cd8b8d9ee3888d": {
-                            "61f07e5713ceb5d6d03b0170d595cc2b717057bef71c8f3fc4b82212a44b": 3162197447987995600
+                            "61f07e5713ceb5d6d03b0170d595cc2b717057bef71c8f3fc4b82212a44b": 3162197447987995651
                         }
                     },
                     "requiredExtraSignatories": [
@@ -101,7 +105,9 @@
                     ],
                     "scriptIntegrityHash": "93493ff6e5c49f80426804076e428e99db2360104c898c232af8b11234a9efdc",
                     "fee": {
-                        "lovelace": 973423
+                        "ada": {
+                            "lovelace": 973423
+                        }
                     },
                     "validityInterval": {
                         "invalidBefore": 3
@@ -136,25 +142,33 @@
                         "0336e5811d0e397ede4de304aaef9f50a4f21fef70442d0a86026ed89565ad0b": "a4d87c9fd87c9f2005202000ffff009f9f42f65a432a9e8bffff9f4158d87c9f0442367a042002ffd87a9f443251f1deffff9fa0d87e9f4373928fffff9f242224a342a7e82220435cd2f80340ff2003",
                         "76279ac9b71237227d154ecee4ac914b270e0e260e66ed9df4ff84da1e84e2d3": "9fa2a20043c8ddd020414020d87b9f0141d1418eff9f426d45ff4123ff"
                     },
-                    "redeemers": {
-                        "certificate:2": {
+                    "redeemers": [
+                        {
+                            "validator": {
+                                "index": 2,
+                                "purpose": "publish"
+                            },
                             "redeemer": "a0",
                             "executionUnits": {
-                                "memory": 8826057976430752000,
-                                "cpu": 4708641250314348000
+                                "memory": 8826057976430751388,
+                                "cpu": 4708641250314347743
                             }
                         },
-                        "certificate:3": {
+                        {
+                            "validator": {
+                                "index": 3,
+                                "purpose": "publish"
+                            },
                             "redeemer": "9fd87d9fd8799f200241e0ffd87e9f41d9426046412d22ff2243a3744303ffa29f04447a1666eb44baef15a701ff434e989f20d8799f40442b68d71241ccffd87d9f416a219f042443ac6641ffffff",
                             "executionUnits": {
-                                "memory": 3376484474234959400,
-                                "cpu": 3703451964476255700
+                                "memory": 3376484474234959459,
+                                "cpu": 3703451964476255843
                             }
                         }
-                    }
+                    ]
                 },
                 {
-                    "id": "db82d91485a628e3732f881c79199c01ece029398329121231296e5c4ca827c6",
+                    "id": "58924fded958dda8a7ac6a120f00eea7e7374ff8ce54751e4ce9db689604b90c",
                     "spends": "collaterals",
                     "inputs": [
                         {
@@ -175,10 +189,10 @@
                             "address": "addr1gx2fe5rhglqrcgf2cpn0fyuvh2cy97ax0lz3v70qv2jmgkczqqqs0pwy02",
                             "value": {
                                 "ada": {
-                                    "lovelace": 312617921725660100
+                                    "lovelace": 5471871707173873214
                                 },
                                 "709fc5abc5df4cfee75360cfa9f3ee7d36d6cb216a0ba4daddb16366": {
-                                    "35": 3812892794721600000
+                                    "35": 1
                                 }
                             },
                             "datumHash": "3c7a5f2e2f52c4756b9b359b63b316c77e9113f635c8690bb1b506b7c9b890f2"
@@ -187,10 +201,10 @@
                             "address": "addr_test1qr0y0q76tdu63exxxfhrcq00u3vpz3jfe0dnevcy5e6tlx23r7kvyuvvj8njqwhrrsv4jsw73uv0apx966rksaa66hzqpu75h5",
                             "value": {
                                 "ada": {
-                                    "lovelace": 3531149964235084000
+                                    "lovelace": 2359388962328459812
                                 },
                                 "2db8410d969b6ad6b6969703c77ebf6c44061aa51c5d6ceba46557e2": {
-                                    "f3fae0095e78ccade17ffa547dd9cd839ebe65": 2153730649591039000
+                                    "f3fae0095e78ccade17ffa547dd9cd839ebe65": 1
                                 }
                             },
                             "datumHash": "4ad8cd5be6986e6c3eb4d3f942c75e68a8e0be40e405c240781964698fca137c"
@@ -199,10 +213,10 @@
                             "address": "addr1q8qgshfmdt5vkx2msf48qtvg3pgurrgxau482m2yyw0c2483lhxjm7kxtt28lhsfkd9mlwtlj3z92nm7zs3m30w7h4hqarsdu2",
                             "value": {
                                 "ada": {
-                                    "lovelace": 4968142171704102000
+                                    "lovelace": 6998929950975338793
                                 },
                                 "467f58932b54910584a0e8ea25a225e06a14530b2e96e938c53a3f22": {
-                                    "34": 7989804813950565000
+                                    "34": 1
                                 }
                             },
                             "datumHash": "0f768d10304e2488f0cf50cd5c8ac25133291b4bf36db311e7ec19bd7ef9eb65"
@@ -219,25 +233,29 @@
                         {
                             "type": "genesisDelegation",
                             "delegate": {
-                                "id": "fdefd8e3beb32cd86c84959f8e156a32a1ba3876ebdd868ad3eefb7c"
+                                "id": "fdefd8e3beb32cd86c84959f8e156a32a1ba3876ebdd868ad3eefb7c",
+                                "vrfVerificationKeyHash": "15f1292a444fe5aa73f95d9d75e4a1909d6aa05fca22a21174a330232ef41a29"
                             },
                             "issuer": {
-                                "id": "50699ad21903e2cc251fdccb6641b78df70fb5972862a4597a1cb6b4",
-                                "vrfVerificationKeyHash": "15f1292a444fe5aa73f95d9d75e4a1909d6aa05fca22a21174a330232ef41a29"
+                                "id": "50699ad21903e2cc251fdccb6641b78df70fb5972862a4597a1cb6b4"
                             }
                         }
                     ],
                     "withdrawals": {
                         "stake_test17qrerkduc7v5vt5mfz4j3vhv667q9lxv4aldhqq6v7cml0gwacue2": {
-                            "lovelace": 433263
+                            "ada": {
+                                "lovelace": 433263
+                            }
                         },
                         "stake178cxrn5h9fqftntssdrjh0kwd6622vlqu3h8r7tl8gnzrhsnvljkg": {
-                            "lovelace": 224375
+                            "ada": {
+                                "lovelace": 224375
+                            }
                         }
                     },
                     "mint": {
                         "39c7e3a4c1dc6032dc0ea4d471195037c85ed90b31926954cd5446c6": {
-                            "1e7a8d28bb1c1988ff842ff101e2e5": 3697388719172431000
+                            "1e7a8d28bb1c1988ff842ff101e2e5": 3697388719172430741
                         }
                     },
                     "requiredExtraSignatories": [
@@ -252,7 +270,9 @@
                     "network": "mainnet",
                     "scriptIntegrityHash": "89fc262c4561ccabd5cfb8a9e30ba3c928b2910829b86096ba771ca387aa1d49",
                     "fee": {
-                        "lovelace": 464857
+                        "ada": {
+                            "lovelace": 464857
+                        }
                     },
                     "validityInterval": {
                         "invalidBefore": 4,
@@ -265,7 +285,9 @@
                                 "source": "treasury",
                                 "target": "reserves",
                                 "value": {
-                                    "lovelace": 142671
+                                    "ada": {
+                                        "lovelace": 142671
+                                    }
                                 }
                             }
                         }

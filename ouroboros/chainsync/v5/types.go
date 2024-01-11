@@ -51,14 +51,14 @@ type TxV5 struct {
 // it's okay to populate the relevant fields in v6. (Example: The "scripts" field in v5
 // and v6 may contain scripts that aren't considered required in v6.)
 func (t TxV5) ConvertToV6() chainsync.Tx {
-	withdrawals := map[string]chainsync.Lovelace{}
+	withdrawals := map[string]shared.Value{}
 	for txid, amt := range t.Body.Withdrawals {
-		withdrawals[txid] = chainsync.Lovelace{Lovelace: num.Int64(amt)}
+		withdrawals[txid] = shared.CreateAdaValue(amt)
 	}
 
-	var tc *chainsync.Lovelace
+	var tc *shared.Value
 	if t.Body.TotalCollateral != nil {
-		temp := chainsync.Lovelace{Lovelace: num.Int64(*t.Body.TotalCollateral)}
+		temp := shared.CreateAdaValue(*t.Body.TotalCollateral)
 		tc = &temp
 	}
 	var cr *chainsync.TxOut
@@ -121,7 +121,7 @@ func (t TxV5) ConvertToV6() chainsync.Tx {
 		Outputs:                  t.Body.Outputs.ConvertToV6(),
 		Certificates:             certificates,
 		Withdrawals:              withdrawals,
-		Fee:                      chainsync.Lovelace{Lovelace: t.Body.Fee},
+		Fee:                      shared.CreateAdaValue(t.Body.Fee.Int64()),
 		ValidityInterval:         t.Body.ValidityInterval.ConvertToV6(),
 		Mint:                     mint,
 		Network:                  string(t.Body.Network),
@@ -144,12 +144,16 @@ func (t TxV5) ConvertToV6() chainsync.Tx {
 func TxFromV6(t chainsync.Tx) TxV5 {
 	withdrawals := map[string]int64{}
 	for txid, amt := range t.Withdrawals {
-		withdrawals[txid] = amt.Lovelace.Int64()
+		for _, policyMap := range amt {
+			for _, amt := range policyMap {
+				withdrawals[txid] = amt.Int64()
+			}
+		}
 	}
 
 	var tc *int64
 	if t.TotalCollateral != nil {
-		temp := t.TotalCollateral.Lovelace.Int64()
+		temp := t.TotalCollateral.AdaLovelace().Int64()
 		tc = &temp
 	}
 	var cr *TxOutV5
@@ -205,7 +209,7 @@ func TxFromV6(t chainsync.Tx) TxV5 {
 			Outputs:                 TxOutsFromV6(t.Outputs),
 			Certificates:            certificates,
 			Withdrawals:             withdrawals,
-			Fee:                     t.Fee.Lovelace,
+			Fee:                     t.Fee.AdaLovelace(),
 			ValidityInterval:        ValidityIntervalFromV6(t.ValidityInterval),
 			Mint:                    &mint,
 			Network:                 network,

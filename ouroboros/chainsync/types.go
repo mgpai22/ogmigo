@@ -28,13 +28,11 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/fxamacker/cbor/v2"
 
-	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/chainsync/num"
 	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/shared"
 )
 
 var (
-	encOptions = cbor.CoreDetEncOptions()
-	bNil       = []byte("nil")
+	bNil = []byte("nil")
 )
 
 // All blocks except Byron-era blocks.
@@ -445,37 +443,31 @@ type Signature struct {
 }
 
 type Tx struct {
-	ID                       string              `json:"id,omitempty"                       dynamodbav:"id,omitempty"`
-	Spends                   string              `json:"spends,omitempty"                   dynamodbav:"spends,omitempty"`
-	Inputs                   []TxIn              `json:"inputs,omitempty"                   dynamodbav:"inputs,omitempty"`
-	References               []TxIn              `json:"references,omitempty"               dynamodbav:"references,omitempty"`
-	Collaterals              []TxIn              `json:"collaterals,omitempty"              dynamodbav:"collaterals,omitempty"`
-	TotalCollateral          *Lovelace           `json:"totalCollateral,omitempty"          dynamodbav:"totalCollateral,omitempty"`
-	CollateralReturn         *TxOut              `json:"collateralReturn,omitempty"         dynamodbav:"collateralReturn,omitempty"`
-	Outputs                  TxOuts              `json:"outputs,omitempty"                  dynamodbav:"outputs,omitempty"`
-	Certificates             []json.RawMessage   `json:"certificates,omitempty"             dynamodbav:"certificates,omitempty"`
-	Withdrawals              map[string]Lovelace `json:"withdrawals,omitempty"              dynamodbav:"withdrawals,omitempty"`
-	Fee                      Lovelace            `json:"fee,omitempty"                      dynamodbav:"fee,omitempty"`
-	ValidityInterval         ValidityInterval    `json:"validityInterval"                   dynamodbav:"validityInterval,omitempty"`
-	Mint                     shared.Value        `json:"mint,omitempty"                     dynamodbav:"mint,omitempty"`
-	Network                  string              `json:"network,omitempty"                  dynamodbav:"network,omitempty"`
-	ScriptIntegrityHash      string              `json:"scriptIntegrityHash,omitempty"      dynamodbav:"scriptIntegrityHash,omitempty"`
-	RequiredExtraSignatories []string            `json:"requiredExtraSignatories,omitempty" dynamodbav:"requiredExtraSignatories,omitempty"`
-	RequiredExtraScripts     []string            `json:"requiredExtraScripts,omitempty"     dynamodbav:"requiredExtraScripts,omitempty"`
-	Proposals                json.RawMessage     `json:"proposals,omitempty"                dynamodbav:"proposals,omitempty"`
-	Votes                    json.RawMessage     `json:"votes,omitempty"                    dynamodbav:"votes,omitempty"`
-	Metadata                 json.RawMessage     `json:"metadata,omitempty"                 dynamodbav:"metadata,omitempty"`
-	Signatories              []Signature         `json:"signatories,omitempty"              dynamodbav:"signatories,omitempty"`
-	Scripts                  json.RawMessage     `json:"scripts,omitempty"                  dynamodbav:"scripts,omitempty"`
-	Datums                   Datums              `json:"datums"                   dynamodbav:"datums,omitempty"`
-	Redeemers                json.RawMessage     `json:"redeemers,omitempty"                dynamodbav:"redeemers,omitempty"`
-	CBOR                     string              `json:"cbor,omitempty"                     dynamodbav:"cbor,omitempty"`
-}
-
-type DoubleNestedInteger map[string]map[string]num.Int
-
-type Lovelace struct {
-	Lovelace num.Int `json:"lovelace,omitempty"  dynamodbav:"lovelace,omitempty"`
+	ID                       string                  `json:"id,omitempty"                       dynamodbav:"id,omitempty"`
+	Spends                   string                  `json:"spends,omitempty"                   dynamodbav:"spends,omitempty"`
+	Inputs                   []TxIn                  `json:"inputs,omitempty"                   dynamodbav:"inputs,omitempty"`
+	References               []TxIn                  `json:"references,omitempty"               dynamodbav:"references,omitempty"`
+	Collaterals              []TxIn                  `json:"collaterals,omitempty"              dynamodbav:"collaterals,omitempty"`
+	TotalCollateral          *shared.Value           `json:"totalCollateral,omitempty"          dynamodbav:"totalCollateral,omitempty"`
+	CollateralReturn         *TxOut                  `json:"collateralReturn,omitempty"         dynamodbav:"collateralReturn,omitempty"`
+	Outputs                  TxOuts                  `json:"outputs,omitempty"                  dynamodbav:"outputs,omitempty"`
+	Certificates             []json.RawMessage       `json:"certificates,omitempty"             dynamodbav:"certificates,omitempty"`
+	Withdrawals              map[string]shared.Value `json:"withdrawals,omitempty"              dynamodbav:"withdrawals,omitempty"`
+	Fee                      shared.Value            `json:"fee,omitempty"                      dynamodbav:"fee,omitempty"`
+	ValidityInterval         ValidityInterval        `json:"validityInterval"                   dynamodbav:"validityInterval,omitempty"`
+	Mint                     shared.Value            `json:"mint,omitempty"                     dynamodbav:"mint,omitempty"`
+	Network                  string                  `json:"network,omitempty"                  dynamodbav:"network,omitempty"`
+	ScriptIntegrityHash      string                  `json:"scriptIntegrityHash,omitempty"      dynamodbav:"scriptIntegrityHash,omitempty"`
+	RequiredExtraSignatories []string                `json:"requiredExtraSignatories,omitempty" dynamodbav:"requiredExtraSignatories,omitempty"`
+	RequiredExtraScripts     []string                `json:"requiredExtraScripts,omitempty"     dynamodbav:"requiredExtraScripts,omitempty"`
+	Proposals                json.RawMessage         `json:"proposals,omitempty"                dynamodbav:"proposals,omitempty"`
+	Votes                    json.RawMessage         `json:"votes,omitempty"                    dynamodbav:"votes,omitempty"`
+	Metadata                 json.RawMessage         `json:"metadata,omitempty"                 dynamodbav:"metadata,omitempty"`
+	Signatories              []Signature             `json:"signatories,omitempty"              dynamodbav:"signatories,omitempty"`
+	Scripts                  json.RawMessage         `json:"scripts,omitempty"                  dynamodbav:"scripts,omitempty"`
+	Datums                   Datums                  `json:"datums"                             dynamodbav:"datums,omitempty"`
+	Redeemers                json.RawMessage         `json:"redeemers,omitempty"                dynamodbav:"redeemers,omitempty"`
+	CBOR                     string                  `json:"cbor,omitempty"                     dynamodbav:"cbor,omitempty"`
 }
 
 type TxID string

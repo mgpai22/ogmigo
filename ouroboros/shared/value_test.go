@@ -69,7 +69,7 @@ func Test_AddAsset(t *testing.T) {
 	}
 	var v2 Value
 	v2.AddAsset(
-		Coin{AssetId: AdaAssetID, Amount: num.Uint64(1)},
+		CreateAdaCoin(num.Uint64(1)),
 		Coin{AssetId: FromSeparate("da8c30857834c6ae7203935b89278c532b3995245295456f993e1d24", "4c51"), Amount: num.Uint64(14310359231)},
 	)
 	var v3 Value

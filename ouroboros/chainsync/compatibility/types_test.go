@@ -309,7 +309,7 @@ func TestCompatibleResponse(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
-	t.Run("Full Response Roll Forward V5", func(t *testing.T) {
+	t.Run("Full Response Roll Forward V6", func(t *testing.T) {
 		rawData, err := os.ReadFile("test_data/Response_NextBlock_v6.json")
 		assert.Nil(t, err)
 
@@ -451,11 +451,11 @@ func TestSerializeCompatibleValue(t *testing.T) {
 func Test_ValueChecks(t *testing.T) {
 	t.Run("string", func(t *testing.T) {
 		equal1 := shared.ValueFromCoins(
-			shared.Coin{AssetId: shared.AdaAssetID, Amount: num.Int64(1000000)},
+			shared.CreateAdaCoin(num.Int64(1000000)),
 			shared.Coin{AssetId: shared.FromSeparate("abra", "cadabra"), Amount: num.Int64(1234567890)},
 		)
 		equal2 := shared.ValueFromCoins(
-			shared.Coin{AssetId: shared.AdaAssetID, Amount: num.Int64(1000000)},
+			shared.CreateAdaCoin(num.Int64(1000000)),
 			shared.Coin{AssetId: shared.FromSeparate("abra", "cadabra"), Amount: num.Int64(1234567890)},
 		)
 		if !shared.Equal(equal1, equal2) {
@@ -463,19 +463,19 @@ func Test_ValueChecks(t *testing.T) {
 		}
 
 		val1 := shared.ValueFromCoins(
-			shared.Coin{AssetId: shared.AdaAssetID, Amount: num.Int64(1000001)},
+			shared.CreateAdaCoin(num.Int64(1000001)),
 			shared.Coin{AssetId: shared.FromSeparate("abra", "cadabra"), Amount: num.Int64(1234567890)},
 		)
 		val2 := shared.ValueFromCoins(
-			shared.Coin{AssetId: shared.AdaAssetID, Amount: num.Int64(1000000)},
+			shared.CreateAdaCoin(num.Int64(1000000)),
 			shared.Coin{AssetId: shared.FromSeparate("abra", "cadabra"), Amount: num.Int64(1234567890)},
 		)
 		val3 := shared.ValueFromCoins(
-			shared.Coin{AssetId: shared.AdaAssetID, Amount: num.Int64(1000000)},
+			shared.CreateAdaCoin(num.Int64(1000000)),
 			shared.Coin{AssetId: shared.FromSeparate("abra", "cadabra"), Amount: num.Int64(12345678900)},
 		)
 		val4 := shared.ValueFromCoins(
-			shared.Coin{AssetId: shared.AdaAssetID, Amount: num.Int64(1000000)},
+			shared.CreateAdaCoin(num.Int64(1000000)),
 			shared.Coin{AssetId: shared.FromSeparate("abra", "cadabra"), Amount: num.Int64(1234567890)},
 		)
 		if !shared.GreaterThanOrEqual(val1, val2) {
@@ -491,7 +491,7 @@ func Test_ValueChecks(t *testing.T) {
 			t.Fatalf("%v is not less than %v", val4, val3)
 		}
 		if ok, err := shared.Enough(val3, val4); !ok {
-			t.Fatalf("%v does not have enough assets for %v: %v", val4, val3, err)
+			t.Fatalf("%v does not have enough assets for %v: %v", val4, val3, err.Error())
 		}
 		if shared.Equal(val1, val2) {
 			t.Fatalf("%v and %v are equal", val1, val2)
@@ -502,7 +502,7 @@ func Test_ValueChecks(t *testing.T) {
 
 		val5 := shared.Add(val1, val2)
 		val6 := shared.ValueFromCoins(
-			shared.Coin{AssetId: shared.AdaAssetID, Amount: num.Int64(2000001)},
+			shared.CreateAdaCoin(num.Int64(2000001)),
 			shared.Coin{AssetId: shared.FromSeparate("abra", "cadabra"), Amount: num.Int64(2469135780)},
 		)
 		if !shared.Equal(val5, val6) {
@@ -510,12 +510,12 @@ func Test_ValueChecks(t *testing.T) {
 		}
 
 		val7 := shared.ValueFromCoins(
-			shared.Coin{AssetId: shared.AdaAssetID, Amount: num.Int64(600000)},
+			shared.CreateAdaCoin(num.Int64(600000)),
 			shared.Coin{AssetId: shared.FromSeparate("abra", "cadabra"), Amount: num.Int64(2345678900)},
 		)
 		val8 := shared.Subtract(val3, val7)
 		val9 := shared.ValueFromCoins(
-			shared.Coin{AssetId: shared.AdaAssetID, Amount: num.Int64(400000)},
+			shared.CreateAdaCoin(num.Int64(400000)),
 			shared.Coin{AssetId: shared.FromSeparate("abra", "cadabra"), Amount: num.Int64(10000000000)},
 		)
 		if !shared.Equal(val8, val9) {
