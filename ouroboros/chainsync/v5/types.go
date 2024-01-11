@@ -124,7 +124,7 @@ func (t TxV5) ConvertToV6() chainsync.Tx {
 		Fee:                      shared.CreateAdaValue(t.Body.Fee.Int64()),
 		ValidityInterval:         t.Body.ValidityInterval.ConvertToV6(),
 		Mint:                     mint,
-		Network:                  string(t.Body.Network),
+		Network:                  t.Body.Network,
 		ScriptIntegrityHash:      t.Body.ScriptIntegrityHash,
 		RequiredExtraSignatories: t.Body.RequiredExtraSignatures,
 		RequiredExtraScripts:     nil,
@@ -145,8 +145,8 @@ func TxFromV6(t chainsync.Tx) TxV5 {
 	withdrawals := map[string]int64{}
 	for txid, amt := range t.Withdrawals {
 		for _, policyMap := range amt {
-			for _, amt := range policyMap {
-				withdrawals[txid] = amt.Int64()
+			for _, assets := range policyMap {
+				withdrawals[txid] = assets.Int64()
 			}
 		}
 	}
