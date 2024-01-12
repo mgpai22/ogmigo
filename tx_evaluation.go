@@ -55,8 +55,13 @@ func (c *Client) EvaluateTx(ctx context.Context, data string) (response *Evaluat
 	return readEvaluateTx(raw)
 }
 
+type Validator struct {
+	Purpose string `json:"purpose"`
+	Index   uint64 `json:"index"`
+}
+
 type ExUnits struct {
-	Validator string        `json:"validator"`
+	Validator Validator     `json:"validator"`
 	Budget    ExUnitsBudget `json:"budget"`
 }
 
