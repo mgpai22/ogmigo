@@ -17,8 +17,8 @@ package ogmigo
 import (
 	"bytes"
 	"context"
-	"errors"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -80,8 +80,8 @@ func readSubmitTx(data []byte) (r *SubmitTxResponse, err error) {
 }
 
 type SubmitTxResponse struct {
-	ID string
-        Error *SubmitTxError
+	ID    string
+	Error *SubmitTxError
 }
 
 type SubmitTxError struct {
