@@ -436,3 +436,64 @@ func (c CompatibleTx) MarshalDynamoDBAttributeValue(item *dynamodb.AttributeValu
 	*item = *av
 	return nil
 }
+
+type CompatibleTxOut chainsync.TxOut
+
+// Deserialize either v5 or v6 values
+func (to *CompatibleTxOut) UnmarshalJSON(data []byte) error {
+	// Assume v6 responses first, then fall back to manual v5 processing.
+	var txOut chainsync.TxOut
+	err := json.Unmarshal(data, &txOut)
+
+	// We check spends here, as that key is distinct from the other result types.
+	if err == nil && txOut.Address != "" {
+		*to = CompatibleTxOut(txOut)
+		return nil
+	}
+
+	var txOutV5 v5.TxOutV5
+	err = json.Unmarshal(data, &txOutV5)
+	if err == nil && txOutV5.Address != "" {
+		*to = CompatibleTxOut(txOutV5.ConvertToV6())
+		return nil
+	} else {
+		return fmt.Errorf("unable to parse as either v5 or v6 TxOut: %w", err)
+	}
+}
+
+// For now, serialize as v5
+func (to CompatibleTxOut) MarshalJSON() ([]byte, error) {
+	six := chainsync.TxOut(to)
+	five := v5.TxOutFromV6(six)
+	return json.Marshal(&five)
+}
+
+func (to *CompatibleTxOut) UnmarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) error {
+	var txOut chainsync.TxOut
+	err := dynamodbattribute.Unmarshal(item, &txOut)
+	// We check spends here, as that key is distinct from the other result types.
+	if err == nil && txOut.Address != "" {
+		*to = CompatibleTxOut(txOut)
+		return nil
+	}
+
+	var txOutV5 v5.TxOutV5
+	err = dynamodbattribute.Unmarshal(item, &txOutV5)
+	if err == nil {
+		*to = CompatibleTxOut(txOutV5.ConvertToV6())
+		return nil
+	} else {
+		return fmt.Errorf("unable to parse as either v5 or v6 TxOut: %w", err)
+	}
+}
+
+func (to CompatibleTxOut) MarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) error {
+	f := v5.TxOutFromV6(chainsync.TxOut(to))
+
+	av, err := dynamodbattribute.Marshal(&f)
+	if err != nil {
+		return err
+	}
+	*item = *av
+	return nil
+}
