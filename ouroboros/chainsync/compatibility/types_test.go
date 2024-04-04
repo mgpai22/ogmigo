@@ -16,6 +16,7 @@ package compatibility
 
 import (
 	"encoding/json"
+	"math/big"
 	"os"
 	"testing"
 
@@ -26,6 +27,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/tj/assert"
 )
+
+const TestDatumKey = 918273
 
 // TODO:
 //   - break this up into smaller tests;
@@ -522,4 +525,62 @@ func Test_ValueChecks(t *testing.T) {
 			t.Fatalf("%v is not the expected value (%v)", val8, val9)
 		}
 	})
+}
+
+func Test_ParseOgmiosMetadataMapV5(t *testing.T) {
+	meta1 := json.RawMessage(`
+          {
+            "hash": "00",
+            "body": {
+              "blob": {
+                "918273": {
+                  "map": [
+                    {
+                      "k": { "int": 1 },
+                      "v": { "string": "foo" }
+                    },
+                    {
+                      "k": { "int": 2 },
+                      "v": { "string": "bar" }
+                    }
+                  ]
+                }
+              }
+            }
+          }`,
+	)
+
+	var o1 CompatibleOgmiosAuxiliaryData
+	err := json.Unmarshal(meta1, &o1)
+	assert.Nil(t, err)
+	labels1 := *(o1.Labels)
+	assert.Equal(t, 0, big.NewInt(1).Cmp(labels1[TestDatumKey].Json.MapField[0].Key.IntField))
+
+	meta2 := json.RawMessage(`
+          {
+            "hash": "00",
+            "labels": {
+              "918273": {
+                "json": {
+                  "map": [
+                    {
+                      "k": { "int": 1 },
+                      "v": { "string": "foo" }
+                    },
+                    {
+                      "k": { "int": 2 },
+                      "v": { "string": "bar" }
+                    }
+                  ]
+                }
+              }
+            }
+          }`,
+	)
+
+	var o2 CompatibleOgmiosAuxiliaryData
+	err = json.Unmarshal(meta2, &o2)
+	assert.Nil(t, err)
+	labels2 := *(o2.Labels)
+	assert.Equal(t, 0, big.NewInt(1).Cmp(labels2[TestDatumKey].Json.MapField[0].Key.IntField))
 }

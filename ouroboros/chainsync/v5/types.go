@@ -1080,3 +1080,58 @@ func ResponseFromV6(r chainsync.ResponsePraos) ResponseV5 {
 		Reflection:  r.ID,
 	}
 }
+
+type OgmiosAuxiliaryDataV5Body struct {
+	Blob OgmiosMetadataV5 `json:"blob"`
+}
+
+type OgmiosMetadataV5 map[int]chainsync.OgmiosMetadatum
+
+type OgmiosAuxiliaryDataV5 struct {
+	Hash string                     `json:"hash"`
+	Body *OgmiosAuxiliaryDataV5Body `json:"body"`
+}
+
+func GetMetadataDatumsV5(txMetadata json.RawMessage, metadataDatumKey int) ([][]byte, error) {
+	datums, err := GetMetadataDatumMapV5(txMetadata, metadataDatumKey)
+	if err != nil {
+		return nil, err
+	}
+	return chainsync.GetMetadataDatums(datums)
+}
+
+func GetMetadataDatumMapV5(txMetadata json.RawMessage, metadataDatumKey int) (map[string][]byte, error) {
+	// Ogmios will sometimes set the Metadata field to "null" when there's not
+	// any actual metadata. This can lead to unintended errors. If we encounter
+	// this case, just return an empty map.
+	if bytes.Equal(txMetadata, json.RawMessage("null")) {
+		var dummyMap map[string][]byte
+		return dummyMap, nil
+	}
+
+	var auxData OgmiosAuxiliaryDataV5
+	err := json.Unmarshal(txMetadata, &auxData)
+	if err != nil {
+		return nil, err
+	}
+	dats, ok := auxData.Body.Blob[metadataDatumKey]
+	if !ok {
+		return nil, nil
+	}
+	return chainsync.ReconstructDatums(dats)
+}
+
+func (t OgmiosAuxiliaryDataV5) ConvertToV6() chainsync.OgmiosAuxiliaryDataV6 {
+	labels := make(chainsync.OgmiosAuxiliaryDataLabelsV6)
+	for k, v := range t.Body.Blob {
+		metadatum := chainsync.OgmiosMetadatumRecordV6{
+			Json: v,
+		}
+		labels[k] = metadatum
+	}
+
+	return chainsync.OgmiosAuxiliaryDataV6{
+		Hash:   t.Hash,
+		Labels: &labels,
+	}
+}
