@@ -497,3 +497,26 @@ func (to CompatibleTxOut) MarshalDynamoDBAttributeValue(item *dynamodb.Attribute
 	*item = *av
 	return nil
 }
+
+type CompatibleOgmiosAuxiliaryData chainsync.OgmiosAuxiliaryDataV6
+
+func (c *CompatibleOgmiosAuxiliaryData) UnmarshalJSON(data []byte) error {
+	// Assume v6 responses first, then fall back to manual v5 processing.
+	var ogmiosAuxiliaryData chainsync.OgmiosAuxiliaryDataV6
+	err := json.Unmarshal(data, &ogmiosAuxiliaryData)
+
+	// We check spends here, as that key is distinct from the other result types.
+	if err == nil && ogmiosAuxiliaryData.Labels != nil {
+		*c = CompatibleOgmiosAuxiliaryData(ogmiosAuxiliaryData)
+		return nil
+	}
+
+	var ogmiosAuxiliaryDataV5 v5.OgmiosAuxiliaryDataV5
+	err = json.Unmarshal(data, &ogmiosAuxiliaryDataV5)
+	if err == nil && ogmiosAuxiliaryDataV5.Body != nil {
+		*c = CompatibleOgmiosAuxiliaryData(ogmiosAuxiliaryDataV5.ConvertToV6())
+		return nil
+	} else {
+		return fmt.Errorf("unable to parse as either v5 or v6 TxOut: %w", err)
+	}
+}

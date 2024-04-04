@@ -20,6 +20,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 
@@ -602,4 +603,179 @@ type Witness struct {
 type ValidityInterval struct {
 	InvalidBefore uint64 `json:"invalidBefore,omitempty" dynamodbav:"invalidBefore,omitempty"`
 	InvalidAfter  uint64 `json:"invalidAfter,omitempty"  dynamodbav:"invalidAfter,omitempty"`
+}
+
+type OgmiosAuxiliaryDataV6 struct {
+	Hash   string
+	Labels *OgmiosAuxiliaryDataLabelsV6
+}
+
+type OgmiosAuxiliaryDataLabelsV6 map[int]OgmiosMetadatumRecordV6
+
+func (o *OgmiosAuxiliaryDataV6) UnmarshalJSON(data []byte) error {
+	var s struct {
+		Hash   string
+		Labels *OgmiosAuxiliaryDataLabelsV6
+	}
+	err := json.Unmarshal(data, &s)
+	if err != nil {
+		return err
+	}
+	if s.Hash == "" {
+		return fmt.Errorf("OgmiosAuxiliaryData: UnmarshalJSON: Hash is empty")
+	}
+	o.Hash = s.Hash
+	o.Labels = s.Labels
+	return nil
+}
+
+type OgmiosMetadatumRecordV6 struct {
+	Cbor string          `json:"cbor"`
+	Json OgmiosMetadatum `json:"json"`
+}
+
+type OgmiosMetadatumKind int
+
+type OgmiosMetadatum struct {
+	Tag         OgmiosMetadatumKind
+	IntField    *big.Int              `json:"int"`
+	StringField string                `json:"string"`
+	BytesField  []byte                `json:"bytes"`
+	ListField   []*OgmiosMetadatum    `json:"list"`
+	MapField    []*OgmiosMetadatumMap `json:"map"`
+}
+
+const (
+	OgmiosMetadatumTagUnknown OgmiosMetadatumKind = iota
+	OgmiosMetadatumTagInt
+	OgmiosMetadatumTagString
+	OgmiosMetadatumTagBytes
+	OgmiosMetadatumTagList
+	OgmiosMetadatumTagMap
+)
+
+func (o *OgmiosMetadatum) UnmarshalJSON(data []byte) error {
+	type intField struct {
+		X *big.Int `json:"int"`
+	}
+	var i intField
+	if err := json.Unmarshal(data, &i); err == nil && i.X != nil {
+		o.Tag = OgmiosMetadatumTagInt
+		o.IntField = i.X
+		return nil
+	}
+	type stringField struct {
+		X *string `json:"string"`
+	}
+	var s stringField
+	if err := json.Unmarshal(data, &s); err == nil && s.X != nil {
+		o.Tag = OgmiosMetadatumTagString
+		o.StringField = *s.X
+		return nil
+	}
+	type bytesField struct {
+		X *string `json:"bytes"`
+	}
+	var b bytesField
+	if err := json.Unmarshal(data, &b); err == nil && b.X != nil {
+		dec, err := hex.DecodeString(*b.X)
+		if err != nil {
+			return err
+		}
+		o.Tag = OgmiosMetadatumTagBytes
+		o.BytesField = dec
+		return nil
+	}
+	type listField struct {
+		X *[]*OgmiosMetadatum `json:"list"`
+	}
+	var l listField
+	if err := json.Unmarshal(data, &l); err == nil && l.X != nil {
+		o.Tag = OgmiosMetadatumTagList
+		o.ListField = *l.X
+		return nil
+	}
+	type mapField struct {
+		X *[]*OgmiosMetadatumMap `json:"map"`
+	}
+	var m mapField
+	if err := json.Unmarshal(data, &m); err == nil && m.X != nil {
+		o.Tag = OgmiosMetadatumTagMap
+		o.MapField = *m.X
+		return nil
+	}
+	return fmt.Errorf("Can't unmarshal %s as OgmiosMetadatum", data)
+}
+
+type OgmiosMetadatumMap struct {
+	Key   *OgmiosMetadatum `json:"k"`
+	Value *OgmiosMetadatum `json:"v"`
+}
+
+func GetMetadataDatums(datums map[string][]byte) ([][]byte, error) {
+	var datumBytes [][]byte
+	for _, datum := range datums {
+		datumBytes = append(datumBytes, datum)
+	}
+	return datumBytes, nil
+}
+
+func GetMetadataDatumsV6(txMetadata json.RawMessage, metadataDatumKey int) ([][]byte, error) {
+	datums, err := GetMetadataDatumMapV6(txMetadata, metadataDatumKey)
+	if err != nil {
+		return nil, err
+	}
+	return GetMetadataDatums(datums)
+}
+
+func GetMetadataDatumMapV6(txMetadata json.RawMessage, metadataDatumKey int) (map[string][]byte, error) {
+	// Ogmios will sometimes set the Metadata field to "null" when there's not
+	// any actual metadata. This can lead to unintended errors. If we encounter
+	// this case, just return an empty map.
+	if bytes.Equal(txMetadata, json.RawMessage("null")) {
+		var dummyMap map[string][]byte
+		return dummyMap, nil
+	}
+
+	var auxData OgmiosAuxiliaryDataV6
+	err := json.Unmarshal(txMetadata, &auxData)
+	if err != nil {
+		return nil, err
+	}
+	labels := *(auxData.Labels)
+	dats, ok := labels[metadataDatumKey]
+	if !ok {
+		return nil, nil
+	}
+	return ReconstructDatums(dats.Json)
+}
+
+func ReconstructDatums(metadatum OgmiosMetadatum) (map[string][]byte, error) {
+	newDatums := make(map[string][]byte, 0)
+	switch metadatum.Tag {
+	case OgmiosMetadatumTagMap:
+		for _, mapItem := range metadatum.MapField {
+			k := mapItem.Key
+			switch k.Tag {
+			case OgmiosMetadatumTagBytes:
+				reconstructed := make([]byte, 0)
+				v := mapItem.Value
+				switch v.Tag {
+				case OgmiosMetadatumTagList:
+					for _, chunk := range v.ListField {
+						reconstructed = append(reconstructed, chunk.BytesField...)
+					}
+					newDatums[hex.EncodeToString(k.BytesField)] = reconstructed
+				default: // Misformed, ignore
+					continue
+				}
+			default: // Misformed, ignore
+				continue
+			}
+		}
+	default: // Misformed, ignore
+		fmt.Print("Misformed")
+		return nil, nil
+	}
+	return newDatums, nil
 }

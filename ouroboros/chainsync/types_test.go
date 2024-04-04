@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
+	"math/big"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -32,6 +33,8 @@ import (
 	"github.com/nsf/jsondiff"
 	"github.com/stretchr/testify/assert"
 )
+
+const TestDatumKey = 918273
 
 func TestUnmarshal(t *testing.T) {
 	err := filepath.Walk("../../ext/ogmios/server/test/vectors/NextBlockResponse", assertStructMatchesSchema(t))
@@ -1363,4 +1366,118 @@ func TestVasil_BackwardsCompatibleWithExistingDynamoDB(t *testing.T) {
 	err = dynamodbattribute.Unmarshal(item["tx"], &response)
 	assert.NoError(t, err)
 	fmt.Println(response.Datums)
+}
+
+func Test_ParseOgmiosMetadatum(t *testing.T) {
+	meta := json.RawMessage(`{ "int": 123 }`)
+
+	var o OgmiosMetadatum
+	err := json.Unmarshal(meta, &o)
+	assert.Nil(t, err)
+	assert.Equal(t, OgmiosMetadatumTagInt, o.Tag)
+	assert.Equal(t, 0, big.NewInt(123).Cmp(o.IntField))
+}
+
+func Test_ParseOgmiosMetadataV6(t *testing.T) {
+	meta := json.RawMessage(`
+          {
+            "hash": "00",
+            "labels": {
+              "918273": {
+                "json": {
+                  "int": 123
+                }
+              }
+            }
+          }`,
+	)
+
+	var o OgmiosAuxiliaryDataV6
+	err := json.Unmarshal(meta, &o)
+	assert.Nil(t, err)
+	labels := *(o.Labels)
+	assert.Equal(t, 0, big.NewInt(123).Cmp(labels[TestDatumKey].Json.IntField))
+}
+
+func Test_ParseOgmiosMetadataMapV6(t *testing.T) {
+	meta := json.RawMessage(`
+          {
+            "hash": "00",
+            "labels": {
+              "918273": {
+                "json": {
+                  "map": [
+                    {
+                      "k": { "int": 1 },
+                      "v": { "string": "foo" }
+                    },
+                    {
+                      "k": { "int": 2 },
+                      "v": { "string": "bar" }
+                    }
+                  ]
+                }
+              }
+            }
+          }`,
+	)
+
+	var o OgmiosAuxiliaryDataV6
+	err := json.Unmarshal(meta, &o)
+	assert.Nil(t, err)
+	labels := *(o.Labels)
+	assert.Equal(t, 0, big.NewInt(1).Cmp(labels[TestDatumKey].Json.MapField[0].Key.IntField))
+}
+
+func Test_GetZapDatumBytesV6(t *testing.T) {
+	meta := json.RawMessage(`
+          {
+            "hash": "00",
+            "labels": {
+              "918273": {
+                "json": {
+                  "map": [
+                    {
+                      "k": {
+                        "bytes": "5e60a2d4ebe669605f5b9cc95844122749fb655970af9ef30aad74f6abc7455e"
+                      },
+                      "v": {
+                        "list":
+                          [
+                            {
+                              "bytes": "d8799f4100d8799fd8799fd8799fd8799f581c694bc6017f9d74a5d9b3ef377b42b9fe4967a04fb1844959057f35bbffd87a80ffd87a80ffd8799f581c694bc6"
+                            },
+                            {
+                              "bytes": "017f9d74a5d9b3ef377b42b9fe4967a04fb1844959057f35bbffff1a002625a0d87b9fd87a9fd8799f1a0007a1201a006312c3ffffffff"
+                            }
+                          ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }`,
+	)
+	bytes :=
+		"d8799f4100d8799fd8799fd8799fd8799" +
+			"f581c694bc6017f9d74a5d9b3ef377b42" +
+			"b9fe4967a04fb1844959057f35bbffd87" +
+			"a80ffd87a80ffd8799f581c694bc6017f" +
+			"9d74a5d9b3ef377b42b9fe4967a04fb18" +
+			"44959057f35bbffff1a002625a0d87b9f" +
+			"d87a9fd8799f1a0007a1201a006312c3f" +
+			"fffffff"
+	expected, err := hex.DecodeString(bytes)
+	assert.Nil(t, err)
+	datumBytes, err := GetMetadataDatumsV6(meta, TestDatumKey)
+	assert.Nil(t, err)
+	assert.Equal(t, expected, datumBytes[0])
+}
+
+func Test_UnmarshalOgmiosMetadataV6(t *testing.T) {
+	meta := json.RawMessage(`{"674":{"map":[{"k":{"string":"msg"},"v":{"list":[{"string":"MuesliSwap Place Order"}]}}]},"1000":{"bytes":"01046034bf780d7e1a39a6ea628c54d70744664111947bfa319072b92d14f063133083b727c9f1b2e83c899982cc66da7aafd748e02206b849"},"1002":{"string":""},"1003":{"string":""},"1004":{"int":-949318},"1005":{"int":2650000},"1007":{"int":1},"1008":{"string":"547ceed647f57e64dc40a29b16be4f36b0d38b5aa3cd7afb286fc094"},"1009":{"string":"6262486f736b79"}}`)
+	var o OgmiosAuxiliaryDataLabelsV6
+	err := json.Unmarshal(meta, &o)
+	assert.Nil(t, err)
 }

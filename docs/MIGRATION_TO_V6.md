@@ -10,7 +10,7 @@ Note that this document is a supplement to [the original Ogmios migration guide]
 There are a handful of caveats that should be considered before reading the main document.
 
 * The Ogmigo v6 upgrade adds no new major functionality beyond v6 struct support and a compatibility layer that allows both v5 and v6 Ogmigo JSON/DB/at-rest data to be unmarshalled into v6 structs. If anything wasn’t supported in Ogmigo v5, it won’t be supported in Ogmigo v6.
-* Support for the Byron era is limited in Ogmigo v6, and may not work as expected. In fact, as of this writing (Jan. 2024), critical functionality, such as the _compatibility_ module, assumes Byron _isn’t_ supported. If you must have Byron support, further Ogmigo work will be required.
+* Support for the Byron era is limited in Ogmigo v6, and may not work as expected. In fact, as of this writing (Apr). 2024), critical functionality, such as the _compatibility_ module, assumes Byron _isn’t_ supported. If you must have Byron support, further Ogmigo work will be required.
 * Any attempt to use a v6-enabled Ogmigo library will, in all likelihood, break the code using Ogmigo out of the box. Many fundamental structs (e.g., _Block_) have been altered to assume v6 structs. If somebody absolutely must use v5 structs, they’ll have to import the _v5_ module and use those structs. Even then, it is highly recommended to use the _compatibility_ module whenever possible, thereby assisting in a smooth transition to the default (v6) code.
 
 # Support for v6
@@ -94,6 +94,10 @@ for policy, policyMap := range nonAdaAssets {
     }
 }
 ```
+
+## Metadata
+
+Transaction metadata is formatted differently in v6. Incoming metadata is still treated by Ogmios as raw bytes. However, there are added structs and helper functions that allow users to get to the actual, underlying metadata. There are v5 (`OgmiosAuxiliaryDataV5`) and v6 (`OgmiosAuxiliaryDataV6`) structs, along with the `CompatibleOgmiosAuxiliaryData` struct that can be used to migrate from v5 to v6.
 
 ## FindIntersect (v5) / findIntersection (v6)
 
