@@ -520,3 +520,46 @@ func (c *CompatibleOgmiosAuxiliaryData) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("unable to parse as either v5 or v6 TxOut: %w", err)
 	}
 }
+
+// For now, serialize as v5
+func (c CompatibleOgmiosAuxiliaryData) MarshalJSON() ([]byte, error) {
+	six := chainsync.OgmiosAuxiliaryDataV6(c)
+	five, err := v5.OgmiosAuxiliaryDataFromV6(six)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(&five)
+}
+
+func (c *CompatibleOgmiosAuxiliaryData) UnmarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) error {
+	var metadata chainsync.OgmiosAuxiliaryDataV6
+	err := dynamodbattribute.Unmarshal(item, &metadata)
+	// We check spends here, as that key is distinct from the other result types.
+	if err == nil && metadata.Labels != nil {
+		*c = CompatibleOgmiosAuxiliaryData(metadata)
+		return nil
+	}
+
+	var metadataV5 v5.OgmiosAuxiliaryDataV5
+	err = dynamodbattribute.Unmarshal(item, &metadataV5)
+	if err == nil {
+		*c = CompatibleOgmiosAuxiliaryData(metadataV5.ConvertToV6())
+		return nil
+	} else {
+		return fmt.Errorf("unable to parse as either v5 or v6 OgmiosAuxiliaryData: %w", err)
+	}
+}
+
+func (c CompatibleOgmiosAuxiliaryData) MarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) error {
+	f, err := v5.OgmiosAuxiliaryDataFromV6(chainsync.OgmiosAuxiliaryDataV6(c))
+	if err != nil {
+		return err
+	}
+
+	av, err := dynamodbattribute.Marshal(&f)
+	if err != nil {
+		return err
+	}
+	*item = *av
+	return nil
+}

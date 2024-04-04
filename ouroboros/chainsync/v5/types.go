@@ -1125,7 +1125,7 @@ func (t OgmiosAuxiliaryDataV5) ConvertToV6() chainsync.OgmiosAuxiliaryDataV6 {
 	labels := make(chainsync.OgmiosAuxiliaryDataLabelsV6)
 	for k, v := range t.Body.Blob {
 		metadatum := chainsync.OgmiosMetadatumRecordV6{
-			Json: v,
+			Json: &v,
 		}
 		labels[k] = metadatum
 	}
@@ -1134,4 +1134,26 @@ func (t OgmiosAuxiliaryDataV5) ConvertToV6() chainsync.OgmiosAuxiliaryDataV6 {
 		Hash:   t.Hash,
 		Labels: &labels,
 	}
+}
+
+// NOTE: This works only for JSON metadata. Entries with CBOR metadata are ignored.
+func OgmiosAuxiliaryDataFromV6(t chainsync.OgmiosAuxiliaryDataV6) (OgmiosAuxiliaryDataV5, error) {
+	if t.Labels == nil {
+		return OgmiosAuxiliaryDataV5{}, nil
+	}
+
+	labels := *(t.Labels)
+	blob := make(OgmiosMetadataV5)
+	for k, v := range labels {
+		if v.Json != nil {
+			blob[k] = *v.Json
+		}
+	}
+
+	return OgmiosAuxiliaryDataV5{
+		Hash: t.Hash,
+		Body: &OgmiosAuxiliaryDataV5Body{
+			Blob: blob,
+		},
+	}, nil
 }

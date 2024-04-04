@@ -630,8 +630,8 @@ func (o *OgmiosAuxiliaryDataV6) UnmarshalJSON(data []byte) error {
 }
 
 type OgmiosMetadatumRecordV6 struct {
-	Cbor string          `json:"cbor"`
-	Json OgmiosMetadatum `json:"json"`
+	Cbor *string          `json:"cbor"`
+	Json *OgmiosMetadatum `json:"json"`
 }
 
 type OgmiosMetadatumKind int
@@ -747,7 +747,7 @@ func GetMetadataDatumMapV6(txMetadata json.RawMessage, metadataDatumKey int) (ma
 	if !ok {
 		return nil, nil
 	}
-	return ReconstructDatums(dats.Json)
+	return ReconstructDatums(*(dats.Json))
 }
 
 func ReconstructDatums(metadatum OgmiosMetadatum) (map[string][]byte, error) {
