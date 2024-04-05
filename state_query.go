@@ -102,6 +102,17 @@ func (c *Client) GenesisConfig(ctx context.Context, era string) (json.RawMessage
 	return content.Result, nil
 }
 
+func (c *Client) StartTime(ctx context.Context) (string, error) {
+	var (
+		payload = makePayload("queryNetwork/startTime", nil, nil)
+		content struct{ Result string }
+	)
+	if err := c.query(ctx, payload, &content); err != nil {
+		return "", err
+	}
+	return content.Result, nil
+}
+
 type EraHistory struct {
 	Summaries []EraSummary
 }
