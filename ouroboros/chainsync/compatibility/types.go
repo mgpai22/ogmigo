@@ -15,6 +15,7 @@
 package compatibility
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
@@ -499,6 +500,36 @@ func (to CompatibleTxOut) MarshalDynamoDBAttributeValue(item *dynamodb.Attribute
 }
 
 type CompatibleOgmiosAuxiliaryData chainsync.OgmiosAuxiliaryDataV6
+
+func GetMetadataDatums(txMetadata json.RawMessage, metadataDatumKey int) ([][]byte, error) {
+	datums, err := GetMetadataDatumMap(txMetadata, metadataDatumKey)
+	if err != nil {
+		return nil, err
+	}
+	return chainsync.GetMetadataDatums(datums)
+}
+
+func GetMetadataDatumMap(txMetadata json.RawMessage, metadataDatumKey int) (map[string][]byte, error) {
+	// Ogmios will sometimes set the Metadata field to "null" when there's not
+	// any actual metadata. This can lead to unintended errors. If we encounter
+	// this case, just return an empty map.
+	if bytes.Equal(txMetadata, json.RawMessage("null")) {
+		var dummyMap map[string][]byte
+		return dummyMap, nil
+	}
+
+	var auxData CompatibleOgmiosAuxiliaryData
+	err := json.Unmarshal(txMetadata, &auxData)
+	if err != nil {
+		return nil, err
+	}
+	labels := *(auxData.Labels)
+	dats, ok := labels[metadataDatumKey]
+	if !ok {
+		return nil, nil
+	}
+	return chainsync.ReconstructDatums(*(dats.Json))
+}
 
 func (c *CompatibleOgmiosAuxiliaryData) UnmarshalJSON(data []byte) error {
 	// Assume v6 responses first, then fall back to manual v5 processing.

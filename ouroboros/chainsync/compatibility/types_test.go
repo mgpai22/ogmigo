@@ -15,6 +15,7 @@
 package compatibility
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"math/big"
 	"os"
@@ -527,7 +528,47 @@ func Test_ValueChecks(t *testing.T) {
 	})
 }
 
-func Test_ParseOgmiosMetadataMapV5(t *testing.T) {
+func Test_ParseOgmiosMetadata(t *testing.T) {
+	meta1 := json.RawMessage(`
+          {
+            "hash": "00",
+            "body": {
+              "blob": {
+                "918273": {
+                  "int": 123
+                }
+              }
+            }
+          }`,
+	)
+
+	var o1 CompatibleOgmiosAuxiliaryData
+	err := json.Unmarshal(meta1, &o1)
+	assert.Nil(t, err)
+	labels1 := *(o1.Labels)
+	assert.Equal(t, 0, big.NewInt(123).Cmp(labels1[TestDatumKey].Json.IntField))
+
+	meta2 := json.RawMessage(`
+          {
+            "hash": "00",
+            "labels": {
+              "918273": {
+                "json": {
+                  "int": 123
+                }
+              }
+            }
+          }`,
+	)
+
+	var o2 CompatibleOgmiosAuxiliaryData
+	err = json.Unmarshal(meta2, &o2)
+	assert.Nil(t, err)
+	labels2 := *(o2.Labels)
+	assert.Equal(t, 0, big.NewInt(123).Cmp(labels2[TestDatumKey].Json.IntField))
+}
+
+func Test_ParseOgmiosMetadataMap(t *testing.T) {
 	meta1 := json.RawMessage(`
           {
             "hash": "00",
@@ -583,4 +624,50 @@ func Test_ParseOgmiosMetadataMapV5(t *testing.T) {
 	assert.Nil(t, err)
 	labels2 := *(o2.Labels)
 	assert.Equal(t, 0, big.NewInt(1).Cmp(labels2[TestDatumKey].Json.MapField[0].Key.IntField))
+}
+
+func Test_GetDatumBytes(t *testing.T) {
+	meta := json.RawMessage(`
+          {
+            "hash": "00",
+            "body": {
+              "blob": {
+                "918273": {
+                  "map": [
+                    {
+                      "k": {
+                        "bytes": "5e60a2d4ebe669605f5b9cc95844122749fb655970af9ef30aad74f6abc7455e"
+                      },
+                      "v": {
+                        "list":
+                          [
+                            {
+                              "bytes": "d8799f4100d8799fd8799fd8799fd8799f581c694bc6017f9d74a5d9b3ef377b42b9fe4967a04fb1844959057f35bbffd87a80ffd87a80ffd8799f581c694bc6"
+                            },
+                            {
+                              "bytes": "017f9d74a5d9b3ef377b42b9fe4967a04fb1844959057f35bbffff1a002625a0d87b9fd87a9fd8799f1a0007a1201a006312c3ffffffff"
+                            }
+                          ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }`,
+	)
+	bytes :=
+		"d8799f4100d8799fd8799fd8799fd8799" +
+			"f581c694bc6017f9d74a5d9b3ef377b42" +
+			"b9fe4967a04fb1844959057f35bbffd87" +
+			"a80ffd87a80ffd8799f581c694bc6017f" +
+			"9d74a5d9b3ef377b42b9fe4967a04fb18" +
+			"44959057f35bbffff1a002625a0d87b9f" +
+			"d87a9fd8799f1a0007a1201a006312c3f" +
+			"fffffff"
+	expected, err := hex.DecodeString(bytes)
+	assert.Nil(t, err)
+	datumBytes, err := GetMetadataDatums(meta, TestDatumKey)
+	assert.Nil(t, err)
+	assert.Equal(t, expected, datumBytes[0])
 }
