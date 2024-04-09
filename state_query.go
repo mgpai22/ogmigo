@@ -155,6 +155,29 @@ func (c *Client) EraSummaries(ctx context.Context) (*EraHistory, error) {
 	}, nil
 }
 
+func SlotToElapsedMilliseconds(history *EraHistory, slot uint64) uint64 {
+	totalMsElapsed := uint64(0)
+	for _, summary := range history.Summaries {
+		intervalEnd := uint64(0)
+		if summary.End.Slot < slot {
+			// The era has passed
+			intervalEnd = summary.End.Slot
+		} else if summary.Start.Slot < slot {
+			// The era is in progress
+			intervalEnd = slot
+		} else {
+			// The era is in the future
+			continue
+		}
+		// Compute the number of elapsed milliseconds for this era
+		slotsElapsedThisEra := intervalEnd - summary.Start.Slot
+		slotLengthMs := summary.Parameters.SlotLength.Milliseconds.Uint64()
+		msElapsedThisEra := slotsElapsedThisEra * slotLengthMs
+		totalMsElapsed += msElapsedThisEra
+	}
+	return totalMsElapsed
+}
+
 func (c *Client) EraStart(ctx context.Context) (statequery.EraStart, error) {
 	var (
 		payload = makePayload("queryLedgerState/eraStart", Map{}, nil)
