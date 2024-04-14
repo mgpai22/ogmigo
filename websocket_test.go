@@ -57,8 +57,10 @@ func TestClient_query(t *testing.T) {
 		_ = http.Serve(listener, timeout(time.Minute))
 	}()
 
-	parts := strings.Split(listener.Addr().String(), ":")
-	port := parts[len(parts)-1]
+	port := string("0")
+	if parts := strings.Split(listener.Addr().String(), ":"); parts != nil {
+		port = parts[len(parts)-1]
+	}
 
 	client := New(WithEndpoint(fmt.Sprintf("ws://127.0.0.1:%v", port)))
 
