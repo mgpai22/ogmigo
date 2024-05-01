@@ -91,6 +91,16 @@ func (i Int) Sub(that Int) Int {
 	return Int(*sum)
 }
 
+func (i Int) Mul(that Int) Int {
+        product := big.NewInt(0).Mul(i.BigInt(), that.BigInt())
+        return Int(*product)
+}
+
+func (i Int) Div(that Int) Int {
+        quotient := big.NewInt(0).Div(i.BigInt(), that.BigInt())
+        return Int(*quotient)
+}
+
 func (i Int) LessThan(that Int) bool {
 	return i.BigInt().Cmp(that.BigInt()) == -1
 }
