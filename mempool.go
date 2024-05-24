@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/chainsync"
 	"github.com/gorilla/websocket"
 	"golang.org/x/sync/errgroup"
 )
@@ -43,7 +44,7 @@ func (c *MonitorMempool) Close() error {
 	return c.err
 }
 
-type MonitorMempoolFunc func(ctx context.Context, data []byte) (bool, error)
+type MonitorMempoolFunc func(ctx context.Context, data *chainsync.Tx) error
 
 type MonitorMempoolOptions struct {
 	reconnect bool // reconnect to ogmios if connection drops
@@ -104,23 +105,32 @@ func (c *Client) MonitorMempool(ctx context.Context, callback MonitorMempoolFunc
 	}, nil
 }
 
-type NextTransaction struct {
-        Result *chainsync.Tx
+type MonitorState int
+
+const (
+	AcquireMempool MonitorState = iota
+	NextTransaction
+)
+
+type AcquireMempoolResponse struct {
+	Method string
+	Result struct {
+		Acquired string
+		Slot     uint64
+	}
+}
+
+type NextTransactionResponse struct {
+	Method string
+	Result struct {
+		Transaction *chainsync.Tx
+	}
 }
 
 func (c *Client) doMonitorMempool(ctx context.Context, callback MonitorMempoolFunc, options MonitorMempoolOptions) error {
 	conn, _, err := websocket.DefaultDialer.Dial(c.options.endpoint, nil)
 	if err != nil {
 		return fmt.Errorf("failed to connect to ogmios, %v: %w", c.options.endpoint, err)
-	}
-
-	init, err := json.Marshal(Map{
-		"jsonrpc": "2.0",
-		"method":  "acquireMempool",
-		"id":      Map{"step": "MEMPOOLINIT"},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to marshal init message: %w", err)
 	}
 
 	group, ctx := errgroup.WithContext(ctx)
@@ -143,41 +153,49 @@ func (c *Client) doMonitorMempool(ctx context.Context, callback MonitorMempoolFu
 	})
 
 	// prime the pump
-	ch := make(chan struct{}, 64)
-	for i := 0; i < c.options.pipeline; i++ {
-		select {
-		case ch <- struct{}{}:
-		default:
-		}
-	}
+	ch := make(chan MonitorState)
 
 	group.Go(func() error {
-		if err := conn.WriteMessage(websocket.TextMessage, init); err != nil {
-			var oe *net.OpError
-			if ok := errors.As(err, &oe); ok {
-				if v := atomic.LoadInt64(&connState); v > 0 {
-					return nil // connection closed
-				}
-			}
-			return fmt.Errorf("failed to write AcquireMempool: %w", err)
-		}
-
-		next := []byte(`{"jsonrpc":"2.0","method":"nextTransaction","params":{"fields":"all"},"id":{}}`)
+		c.options.logger.Info("writer goroutine")
+		nextTransaction := []byte(`{"jsonrpc":"2.0","method":"nextTransaction","params":{"fields":"all"},"id":{}}`)
+		acquireMempool := []byte(`{"jsonrpc":"2.0","method":"acquireMempool","id":{"step":"MEMPOOLINIT"}}`)
+		var todo MonitorState
 		for {
 			select {
 			case <-ctx.Done():
 				return nil
-			case <-ch:
-				if err := conn.WriteMessage(websocket.TextMessage, next); err != nil {
-					return fmt.Errorf("failed to write nextTransaction: %w", err)
+			case todo = <-ch:
+				switch todo {
+				case AcquireMempool:
+					c.options.logger.Info("writing AcquireMempool")
+					if err := conn.WriteMessage(websocket.TextMessage, acquireMempool); err != nil {
+						var oe *net.OpError
+						if ok := errors.As(err, &oe); ok {
+							if v := atomic.LoadInt64(&connState); v > 0 {
+								return nil // connection closed
+							}
+						}
+						return fmt.Errorf("failed to write acquireMempool: %w", err)
+					}
+				case NextTransaction:
+					c.options.logger.Info("writing NextTransaction")
+					if err := conn.WriteMessage(websocket.TextMessage, nextTransaction); err != nil {
+						return fmt.Errorf("failed to write nextTransaction: %w", err)
+					}
+				default:
+					return fmt.Errorf("invalid channel state")
 				}
 			}
 		}
 	})
 
 	group.Go(func() error {
+		ch <- AcquireMempool
+		c.options.logger.Info("reader goroutine")
 		for n := uint64(1); ; n++ {
+			c.options.logger.Info("trying to read a message")
 			messageType, data, err := conn.ReadMessage()
+			c.options.logger.Info("read a message")
 			if err != nil {
 				if errors.Is(err, io.EOF) {
 					return nil
@@ -212,35 +230,28 @@ func (c *Client) doMonitorMempool(ctx context.Context, callback MonitorMempoolFu
 				// ok
 			}
 
-                        //var nextTransactionResponse Response
-                        //if err := json.Unmarshal(data, &nextTransactionResponse); err != nil {
-                        //        return fmt.Errorf("couldn't unmarshal response into Response: %w", err)
-                        //}
+			//c.options.logger.Info(string(data))
 
-                        //if nextTransactionResponse.Result == nil {
-                        //       // Acquire mempool again 
-                        //} else {
-                        //       err := callback(ctx, nextTransactionResponse.Result)
-                        //       if err != nil {
-                        //               return fmt.Errorf("mempool monitoring stopped: callback failed: %w", err)
-                        //       }
-                        //}
+			var acquireMempoolResponse AcquireMempoolResponse
+			acquireMempoolErr := json.Unmarshal(data, &acquireMempoolResponse)
 
-			requestNext, err := callback(ctx, data)
-			if err != nil {
-				return fmt.Errorf("mempool monitoring stopped: callback failed: %w", err)
+			var nextTransactionResponse NextTransactionResponse
+			nextTransactionErr := json.Unmarshal(data, &nextTransactionResponse)
+
+			if acquireMempoolErr != nil && nextTransactionErr != nil {
+				return fmt.Errorf("couldn't parse response from ogmios: %w", errors.Join(acquireMempoolErr, nextTransactionErr))
 			}
-			if requestNext {
-				select {
-				case <-ctx.Done():
-					return nil
-				case ch <- struct{}{}:
-					// request the next message
-				default:
-					// pump is full
-				}
+
+			if acquireMempoolResponse.Method == "acquireMempool" && acquireMempoolErr == nil {
+				ch <- NextTransaction
+			} else if nextTransactionResponse.Method == "nextTransaction" && nextTransactionResponse.Result.Transaction == nil {
+				ch <- AcquireMempool
 			} else {
-				return nil
+				err := callback(ctx, nextTransactionResponse.Result.Transaction)
+				if err != nil {
+					return fmt.Errorf("mempool monitoring stopped: callback failed: %w", err)
+				}
+				ch <- NextTransaction
 			}
 		}
 	})

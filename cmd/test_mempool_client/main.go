@@ -10,18 +10,13 @@ import (
 	"time"
 
 	"github.com/SundaeSwap-finance/ogmigo/v6"
+	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/chainsync"
 )
 
 func main() {
-	n := 10
-	var callback ogmigo.MonitorMempoolFunc = func(ctx context.Context, data []byte) (bool, error) {
-		fmt.Printf("%s\n", string(data))
-		if n > 0 {
-                        n = n - 1
-			return true, nil
-		} else {
-			return false, nil
-		}
+	var callback ogmigo.MonitorMempoolFunc = func(ctx context.Context, tx *chainsync.Tx) error {
+		fmt.Printf("tx.ID: %s\n", tx.ID)
+		return nil
 	}
 
 	//debugPtr := flag.Bool("debug", false, "Print debug statements")
@@ -36,7 +31,7 @@ func main() {
 		return
 	}
 
-	time.Sleep(2 * time.Second)
+	time.Sleep(60 * time.Second)
 
 	if err := closer.Close(); err != nil {
 		fmt.Printf("Failed MonitorMempool Close: %v\n", err)
