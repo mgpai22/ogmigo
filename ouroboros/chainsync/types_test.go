@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -45,6 +44,9 @@ func TestUnmarshal(t *testing.T) {
 
 func assertStructMatchesSchema(t *testing.T) filepath.WalkFunc {
 	return func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 		if info.IsDir() {
 			return nil
 		}
@@ -76,6 +78,9 @@ func TestDynamodbSerialize(t *testing.T) {
 
 func assertDynamoDBSerialize(t *testing.T) filepath.WalkFunc {
 	return func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 		if info.IsDir() {
 			return nil
 		}
@@ -508,7 +513,7 @@ func TestVasil_DatumParsing_Hex(t *testing.T) {
 }
 
 func TestVasil_BackwardsCompatibleWithExistingDynamoDB(t *testing.T) {
-	data, err := ioutil.ReadFile("testdata/scoop.json")
+	data, err := os.ReadFile("testdata/scoop.json")
 	assert.Nil(t, err)
 
 	var item map[string]*dynamodb.AttributeValue

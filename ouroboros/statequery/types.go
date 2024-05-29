@@ -10,8 +10,8 @@ import (
 
 type EraStart struct {
 	Time  time.Duration `json:"time,omitempty"`
-	Slot  uint64        `json:"slot,omit"`
-	Epoch uint64        `json:"epoch,omit"`
+	Slot  uint64        `json:"slot,omitempty"`
+	Epoch uint64        `json:"epoch,omitempty"`
 }
 
 type Utxo struct {

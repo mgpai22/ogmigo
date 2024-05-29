@@ -34,7 +34,6 @@ import (
 )
 
 var (
-	encOptions = cbor.CoreDetEncOptions()
 	bNil       = []byte("nil")
 )
 

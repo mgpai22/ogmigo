@@ -33,6 +33,9 @@ func TestDeserializeValue(t *testing.T) {
 
 	var got Value
 	err = json.Unmarshal(data, &got)
+	if err != nil {
+		t.Fatalf("got %#v; want %#v", got, want)
+	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %#v; want %#v", got, want)
 	}
