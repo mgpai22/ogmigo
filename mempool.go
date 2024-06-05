@@ -44,7 +44,7 @@ func (c *MonitorMempool) Close() error {
 	return c.err
 }
 
-type MonitorMempoolFunc func(ctx context.Context, data *chainsync.Tx) error
+type MonitorMempoolFunc func(ctx context.Context, data []*chainsync.Tx, slot uint64) error
 
 type MonitorMempoolOptions struct {
 	reconnect bool // reconnect to ogmios if connection drops
@@ -156,7 +156,6 @@ func (c *Client) doMonitorMempool(ctx context.Context, callback MonitorMempoolFu
 	ch := make(chan MonitorState)
 
 	group.Go(func() error {
-		c.options.logger.Info("writer goroutine")
 		nextTransaction := []byte(`{"jsonrpc":"2.0","method":"nextTransaction","params":{"fields":"all"},"id":{}}`)
 		acquireMempool := []byte(`{"jsonrpc":"2.0","method":"acquireMempool","id":{"step":"MEMPOOLINIT"}}`)
 		var todo MonitorState
@@ -167,7 +166,6 @@ func (c *Client) doMonitorMempool(ctx context.Context, callback MonitorMempoolFu
 			case todo = <-ch:
 				switch todo {
 				case AcquireMempool:
-					c.options.logger.Info("writing AcquireMempool")
 					if err := conn.WriteMessage(websocket.TextMessage, acquireMempool); err != nil {
 						var oe *net.OpError
 						if ok := errors.As(err, &oe); ok {
@@ -178,7 +176,6 @@ func (c *Client) doMonitorMempool(ctx context.Context, callback MonitorMempoolFu
 						return fmt.Errorf("failed to write acquireMempool: %w", err)
 					}
 				case NextTransaction:
-					c.options.logger.Info("writing NextTransaction")
 					if err := conn.WriteMessage(websocket.TextMessage, nextTransaction); err != nil {
 						return fmt.Errorf("failed to write nextTransaction: %w", err)
 					}
@@ -191,11 +188,10 @@ func (c *Client) doMonitorMempool(ctx context.Context, callback MonitorMempoolFu
 
 	group.Go(func() error {
 		ch <- AcquireMempool
-		c.options.logger.Info("reader goroutine")
+		var transactions []*chainsync.Tx
+		var slot uint64
 		for n := uint64(1); ; n++ {
-			c.options.logger.Info("trying to read a message")
 			messageType, data, err := conn.ReadMessage()
-			c.options.logger.Info("read a message")
 			if err != nil {
 				if errors.Is(err, io.EOF) {
 					return nil
@@ -230,8 +226,6 @@ func (c *Client) doMonitorMempool(ctx context.Context, callback MonitorMempoolFu
 				// ok
 			}
 
-			//c.options.logger.Info(string(data))
-
 			var acquireMempoolResponse AcquireMempoolResponse
 			acquireMempoolErr := json.Unmarshal(data, &acquireMempoolResponse)
 
@@ -243,14 +237,17 @@ func (c *Client) doMonitorMempool(ctx context.Context, callback MonitorMempoolFu
 			}
 
 			if acquireMempoolResponse.Method == "acquireMempool" && acquireMempoolErr == nil {
+				slot = acquireMempoolResponse.Result.Slot
 				ch <- NextTransaction
 			} else if nextTransactionResponse.Method == "nextTransaction" && nextTransactionResponse.Result.Transaction == nil {
-				ch <- AcquireMempool
-			} else {
-				err := callback(ctx, nextTransactionResponse.Result.Transaction)
+				err := callback(ctx, transactions, slot)
+				transactions = nil
 				if err != nil {
 					return fmt.Errorf("mempool monitoring stopped: callback failed: %w", err)
 				}
+				ch <- AcquireMempool
+			} else {
+				transactions = append(transactions, nextTransactionResponse.Result.Transaction)
 				ch <- NextTransaction
 			}
 		}
