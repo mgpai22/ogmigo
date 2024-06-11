@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/statequery"
 	"github.com/buger/jsonparser"
 )
 
@@ -35,17 +36,20 @@ type EvaluateTx struct {
 	Cbor string `json:"cbor"`
 }
 
-// EvaluateTx measures the script execution costs of a transaction.
-// TODO: Support additionalUtxoSet
-// https://ogmios.dev/mini-protocols/local-tx-submission/
-// https://github.com/CardanoSolutions/ogmios/blob/v6.0/docs/content/mini-protocols/local-tx-submission.md
-func (c *Client) EvaluateTx(ctx context.Context, data string) (response *EvaluateTxResponse, err error) {
+func (c *Client) evaluateTx(ctx context.Context, data string, additionalUtxos []statequery.TxOut) (response *EvaluateTxResponse, err error) {
 	tx := EvaluateTx{
 		Cbor: data,
 	}
 
+	arguments := Map{
+		"transaction": tx,
+	}
+	if len(additionalUtxos) > 0 {
+		arguments["additionalUtxo"] = additionalUtxos
+	}
+
 	var (
-		payload = makePayload("evaluateTransaction", Map{"transaction": tx}, nil)
+		payload = makePayload("evaluateTransaction", arguments, nil)
 		raw     json.RawMessage
 	)
 	if err := c.query(ctx, payload, &raw); err != nil {
@@ -53,6 +57,17 @@ func (c *Client) EvaluateTx(ctx context.Context, data string) (response *Evaluat
 	}
 
 	return readEvaluateTx(raw)
+}
+
+// EvaluateTx measures the script execution costs of a transaction.
+// https://ogmios.dev/mini-protocols/local-tx-submission/
+// https://github.com/CardanoSolutions/ogmios/blob/v6.0/docs/content/mini-protocols/local-tx-submission.md
+func (c *Client) EvaluateTx(ctx context.Context, data string) (response *EvaluateTxResponse, err error) {
+	return evaluateTx(ctx, data, nil)
+}
+
+func (c *Client) EvaluateTxWithAdditionalUtxos(ctx context.Context, data string, additionalUtxos []statequery.TxOut) (response *EvaluateTxResponse, err error) {
+	return evaluateTx(ctx, data, additionalUtxos)
 }
 
 type Validator struct {
