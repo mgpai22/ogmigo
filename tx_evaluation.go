@@ -36,10 +36,6 @@ type EvaluateTx struct {
 	Cbor string `json:"cbor"`
 }
 
-// EvaluateTx measures the script execution costs of a transaction.
-// TODO: Support additionalUtxoSet
-// https://ogmios.dev/mini-protocols/local-tx-submission/
-// https://github.com/CardanoSolutions/ogmios/blob/v6.0/docs/content/mini-protocols/local-tx-submission.md
 func (c *Client) evaluateTx(ctx context.Context, data string, additionalUtxos []statequery.TxOut) (response *EvaluateTxResponse, err error) {
 	tx := EvaluateTx{
 		Cbor: data,
@@ -63,6 +59,9 @@ func (c *Client) evaluateTx(ctx context.Context, data string, additionalUtxos []
 	return readEvaluateTx(raw)
 }
 
+// EvaluateTx measures the script execution costs of a transaction.
+// https://ogmios.dev/mini-protocols/local-tx-submission/
+// https://github.com/CardanoSolutions/ogmios/blob/v6.0/docs/content/mini-protocols/local-tx-submission.md
 func (c *Client) EvaluateTx(ctx context.Context, data string) (response *EvaluateTxResponse, err error) {
 	return evaluateTx(ctx, data, nil)
 }
