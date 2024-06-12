@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/statequery"
+	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/shared"
 	"github.com/buger/jsonparser"
 )
 
@@ -36,7 +36,7 @@ type EvaluateTx struct {
 	Cbor string `json:"cbor"`
 }
 
-func (c *Client) evaluateTx(ctx context.Context, data string, additionalUtxos []statequery.TxOut) (response *EvaluateTxResponse, err error) {
+func (c *Client) evaluateTx(ctx context.Context, data string, additionalUtxos []shared.Utxo) (response *EvaluateTxResponse, err error) {
 	tx := EvaluateTx{
 		Cbor: data,
 	}
@@ -63,11 +63,11 @@ func (c *Client) evaluateTx(ctx context.Context, data string, additionalUtxos []
 // https://ogmios.dev/mini-protocols/local-tx-submission/
 // https://github.com/CardanoSolutions/ogmios/blob/v6.0/docs/content/mini-protocols/local-tx-submission.md
 func (c *Client) EvaluateTx(ctx context.Context, data string) (response *EvaluateTxResponse, err error) {
-	return evaluateTx(ctx, data, nil)
+	return c.evaluateTx(ctx, data, nil)
 }
 
-func (c *Client) EvaluateTxWithAdditionalUtxos(ctx context.Context, data string, additionalUtxos []statequery.TxOut) (response *EvaluateTxResponse, err error) {
-	return evaluateTx(ctx, data, additionalUtxos)
+func (c *Client) EvaluateTxWithAdditionalUtxos(ctx context.Context, data string, additionalUtxos []shared.Utxo) (response *EvaluateTxResponse, err error) {
+	return c.evaluateTx(ctx, data, additionalUtxos)
 }
 
 type Validator struct {

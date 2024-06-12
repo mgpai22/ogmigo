@@ -14,8 +14,10 @@ import (
 )
 
 func main() {
-	var callback ogmigo.MonitorMempoolFunc = func(ctx context.Context, tx *chainsync.Tx) error {
-		fmt.Printf("tx.ID: %s\n", tx.ID)
+	var callback ogmigo.MonitorMempoolFunc = func(ctx context.Context, snapshot []*chainsync.Tx, slot uint64) error {
+		for _, tx := range snapshot {
+			fmt.Printf("tx.ID: %s\n", tx.ID)
+		}
 		return nil
 	}
 
