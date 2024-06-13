@@ -21,6 +21,7 @@ import (
 
 	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/chainsync"
 	v5 "github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/chainsync/v5"
+	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/shared"
 	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/statequery"
 )
 
@@ -191,10 +192,10 @@ func (c *Client) EraStart(ctx context.Context) (statequery.EraStart, error) {
 	return content.Result, nil
 }
 
-func (c *Client) UtxosByAddress(ctx context.Context, addresses ...string) ([]statequery.TxOut, error) {
+func (c *Client) UtxosByAddress(ctx context.Context, addresses ...string) ([]shared.Utxo, error) {
 	var (
 		payload = makePayload("queryLedgerState/utxo", Map{"addresses": addresses}, nil)
-		content struct{ Result []statequery.TxOut }
+		content struct{ Result []shared.Utxo }
 	)
 
 	if err := c.query(ctx, payload, &content); err != nil {
@@ -204,10 +205,10 @@ func (c *Client) UtxosByAddress(ctx context.Context, addresses ...string) ([]sta
 	return content.Result, nil
 }
 
-func (c *Client) UtxosByTxIn(ctx context.Context, txIns ...chainsync.TxInQuery) ([]statequery.TxOut, error) {
+func (c *Client) UtxosByTxIn(ctx context.Context, txIns ...chainsync.TxInQuery) ([]shared.Utxo, error) {
 	var (
 		payload = makePayload("queryLedgerState/utxo", Map{"outputReferences": txIns}, nil)
-		content struct{ Result []statequery.TxOut }
+		content struct{ Result []shared.Utxo }
 	)
 
 	if err := c.query(ctx, payload, &content); err != nil {
