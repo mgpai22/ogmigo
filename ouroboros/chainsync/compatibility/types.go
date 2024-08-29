@@ -34,20 +34,20 @@ type CompatibleResultFindIntersection chainsync.ResultFindIntersectionPraos
 func (c *CompatibleResultFindIntersection) UnmarshalJSON(data []byte) error {
 	// Assume v6 responses first, then fall back to manual v5 processing.
 	var r chainsync.ResultFindIntersectionPraos
-	err := json.Unmarshal(data, &r)
+	err1 := json.Unmarshal(data, &r)
 	// We check intersection here, as that key is distinct from the other result types
-	if err == nil && (r.Intersection != nil || r.Error != nil) {
+	if err1 == nil && (r.Intersection != nil || r.Error != nil) {
 		*c = CompatibleResultFindIntersection(r)
 		return nil
 	}
 
 	var r5 v5.ResultFindIntersectionV5
-	err = json.Unmarshal(data, &r5)
-	if err == nil && (r5.IntersectionFound != nil || r5.IntersectionNotFound != nil) {
+	err2 := json.Unmarshal(data, &r5)
+	if err2 == nil && (r5.IntersectionFound != nil || r5.IntersectionNotFound != nil) {
 		*c = CompatibleResultFindIntersection(r5.ConvertToV6())
 		return nil
 	} else {
-		return fmt.Errorf("unable to parse as either v5 or v6 FindIntersection: %w", err)
+		return fmt.Errorf("unable to parse as either v5 or v6 FindIntersection: '%w'; '%w'", err1, err2)
 	}
 }
 
@@ -119,19 +119,19 @@ type CompatibleResultNextBlock chainsync.ResultNextBlockPraos
 func (c *CompatibleResultNextBlock) UnmarshalJSON(data []byte) error {
 	// Assume v6 responses first, then fall back to manual v5 processing.
 	var r chainsync.ResultNextBlockPraos
-	err := json.Unmarshal(data, &r)
-	if err == nil && r.Direction != "" {
+	err1 := json.Unmarshal(data, &r)
+	if err1 == nil && r.Direction != "" {
 		*c = CompatibleResultNextBlock(r)
 		return nil
 	}
 
 	var v v5.ResultNextBlockV5
-	err = json.Unmarshal(data, &v)
-	if err == nil && (v.RollBackward != nil || v.RollForward != nil) {
+	err2 := json.Unmarshal(data, &v)
+	if err2 == nil && (v.RollBackward != nil || v.RollForward != nil) {
 		*c = CompatibleResultNextBlock(v.ConvertToV6())
 		return nil
 	} else {
-		return fmt.Errorf("unable to parse as either v5 of v6 NextBlock: %w", err)
+		return fmt.Errorf("unable to parse as either v5 or v6 NextBlock: '%w'; '%w'", err1, err2)
 	}
 }
 
@@ -320,23 +320,23 @@ type CompatibleResult struct {
 
 func (c *CompatibleResult) UnmarshalJSON(data []byte) error {
 	var rfi CompatibleResultFindIntersection
-	err := json.Unmarshal(data, &rfi)
+	err1 := json.Unmarshal(data, &rfi)
 	r := CompatibleResult{}
-	if err == nil {
+	if err1 == nil {
 		r.FindIntersection = &rfi
 		*c = r
 		return nil
 	}
 
 	var rnb CompatibleResultNextBlock
-	err = json.Unmarshal(data, &rnb)
-	if err == nil {
+	err2 := json.Unmarshal(data, &rnb)
+	if err2 == nil {
 		r.NextBlock = &rnb
 		*c = r
 		return nil
 	}
 
-	return fmt.Errorf("unable to find an appropriate result")
+	return fmt.Errorf("unable to find an appropriate result: '%w'; '%w'", err1, err2)
 }
 
 func (c CompatibleResult) MarshalJSON() ([]byte, error) {
