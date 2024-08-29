@@ -510,6 +510,9 @@ func GetMetadataDatums(txMetadata json.RawMessage, metadataDatumKey int) ([][]by
 }
 
 func GetMetadataDatumMap(txMetadata json.RawMessage, metadataDatumKey int) (map[string][]byte, error) {
+	if txMetadata == nil {
+		return map[string][]byte{}, nil
+	}
 	// Ogmios will sometimes set the Metadata field to "null" when there's not
 	// any actual metadata. This can lead to unintended errors. If we encounter
 	// this case, just return an empty map.
