@@ -526,10 +526,16 @@ func GetMetadataDatumMap(txMetadata json.RawMessage, metadataDatumKey int) (map[
 	if err != nil {
 		return nil, err
 	}
+	if auxData.Labels == nil {
+		return nil, nil
+	}
 	labels := *(auxData.Labels)
 	dats, ok := labels[metadataDatumKey]
 	if !ok {
 		return nil, nil
+	}
+	if dats.Json == nil {
+		return nil, fmt.Errorf("transaction metadata at key %d is missing a json representation: %v", metadataDatumKey, string(txMetadata))
 	}
 	return chainsync.ReconstructDatums(*(dats.Json))
 }
