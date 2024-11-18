@@ -29,7 +29,7 @@ import (
 	"github.com/gorilla/websocket"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/SundaeSwap-finance/ogmigo/ouroboros/chainsync"
+	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/chainsync"
 )
 
 // ChainSync provides control over a given ChainSync connection
@@ -44,6 +44,10 @@ type ChainSync struct {
 // Done indicates the ChainSync has terminated prematurely
 func (c *ChainSync) Done() <-chan struct{} {
 	return c.done
+}
+
+func (c *ChainSync) Err() <-chan error {
+	return c.errs
 }
 
 // Close the ChainSync connection
@@ -209,7 +213,7 @@ func (c *Client) doChainSync(ctx context.Context, callback ChainSyncFunc, option
 			return fmt.Errorf("failed to write FindIntersect: %w", err)
 		}
 
-		next := []byte(`{"type":"jsonwsp/request","version":"1.0","servicename":"ogmios","methodname":"RequestNext","args":{}}`)
+		next := []byte(`{"jsonrpc":"2.0","method":"nextBlock","id":{}}`)
 		for {
 			select {
 			case <-ctx.Done():
@@ -327,12 +331,10 @@ func getInit(ctx context.Context, store Store, pp ...chainsync.Point) (data []by
 	}
 
 	init := Map{
-		"type":        "jsonwsp/request",
-		"version":     "1.0",
-		"servicename": "ogmios",
-		"methodname":  "FindIntersect",
-		"args":        Map{"points": points},
-		"mirror":      Map{"step": "INIT"},
+		"jsonrpc": "2.0",
+		"method":  "findIntersection",
+		"params":  Map{"points": points},
+		"id":      Map{"step": "INIT"},
 	}
 	return json.Marshal(init)
 }
@@ -345,11 +347,16 @@ func getPoint(data ...[]byte) (chainsync.Point, bool) {
 			continue
 		}
 
-		var response chainsync.Response
+		var response chainsync.ResponsePraos
 		if err := json.Unmarshal(d, &response); err == nil {
-			if response.Result != nil && response.Result.RollForward != nil {
-				ps := response.Result.RollForward.Block.PointStruct()
-				return ps.Point(), true
+			if response.Method == chainsync.NextBlockMethod {
+				nbr := response.MustNextBlockResult()
+				if nbr.Direction == chainsync.RollForwardString {
+					ps := nbr.Block.PointStruct()
+					return ps.Point(), true
+				} else if nbr.Direction == chainsync.RollBackwardString {
+					return *nbr.Point, true
+				}
 			}
 		}
 	}

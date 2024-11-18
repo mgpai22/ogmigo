@@ -28,7 +28,8 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
-	"github.com/SundaeSwap-finance/ogmigo/ouroboros/chainsync"
+	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/chainsync"
+	"github.com/tj/assert"
 )
 
 func TestClient_ChainSync(t *testing.T) {
@@ -48,7 +49,7 @@ func TestClient_ChainSync(t *testing.T) {
 
 	client := New(WithEndpoint(endpoint))
 	var callback ChainSyncFunc = func(ctx context.Context, data []byte) error {
-		var response chainsync.Response
+		var response chainsync.ResponsePraos
 		decoder := json.NewDecoder(bytes.NewReader(data)) // use decoder to check for unknown fields
 		decoder.DisallowUnknownFields()
 
@@ -61,10 +62,9 @@ func TestClient_ChainSync(t *testing.T) {
 		read += int64(len(data))
 		if v := atomic.AddInt64(&counter, 1); v%1e3 == 0 {
 			var blockNo uint64
-			if response.Result != nil && response.Result.RollForward != nil {
-				if ps, ok := response.Result.RollForward.Tip.PointStruct(); ok {
-					blockNo = ps.BlockNo
-				}
+			nbr := response.MustNextBlockResult()
+			if nbr.Direction == chainsync.RollForwardString {
+				blockNo = nbr.Block.Height
 			}
 			log.Printf("read: block=%v, n=%v, read=%v", blockNo, p.Sprintf("%d", v), p.Sprintf("%d", read))
 		}
@@ -110,14 +110,14 @@ func (m mockStore) Load(context.Context) (chainsync.Points, error) {
 func Test_getInit(t *testing.T) {
 	ctx := context.Background()
 	p1 := chainsync.PointStruct{
-		BlockNo: 123,
-		Hash:    "hash",
-		Slot:    456,
+		Height: nil,
+		ID:     "hash",
+		Slot:   456,
 	}
 	p2 := chainsync.PointStruct{
-		BlockNo: 321,
-		Hash:    "hash",
-		Slot:    654,
+		Height: nil,
+		ID:     "hash",
+		Slot:   654,
 	}
 
 	t.Run("from store", func(t *testing.T) {
@@ -129,10 +129,8 @@ func Test_getInit(t *testing.T) {
 			t.Fatalf("got %v; want nil", err)
 		}
 
-		want := `{"args":{"points":[{"blockNo":123,"hash":"hash","slot":456}]},"methodname":"FindIntersect","mirror":{"step":"INIT"},"servicename":"ogmios","type":"jsonwsp/request","version":"1.0"}`
-		if got := string(points); got != want {
-			t.Fatalf("got %v; want %v", got, want)
-		}
+		want := `{"id":{"step":"INIT"},"jsonrpc":"2.0","method":"findIntersection","params":{"points":[{"id":"hash","slot":456}]}}`
+		assert.EqualValues(t, string(points), want)
 	})
 
 	t.Run("from points", func(t *testing.T) {
@@ -142,9 +140,7 @@ func Test_getInit(t *testing.T) {
 			t.Fatalf("got %v; want nil", err)
 		}
 
-		want := `{"args":{"points":[{"blockNo":123,"hash":"hash","slot":456}]},"methodname":"FindIntersect","mirror":{"step":"INIT"},"servicename":"ogmios","type":"jsonwsp/request","version":"1.0"}`
-		if got := string(points); got != want {
-			t.Fatalf("got %v; want %v", got, want)
-		}
+		want := `{"id":{"step":"INIT"},"jsonrpc":"2.0","method":"findIntersection","params":{"points":[{"id":"hash","slot":456}]}}`
+		assert.EqualValues(t, string(points), want)
 	})
 }

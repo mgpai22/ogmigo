@@ -22,6 +22,10 @@ type circular struct {
 	data  [][]byte
 }
 
+type SubmitTxPayload struct {
+	CBOR string `json:"cbor"`
+}
+
 func newCircular(cap int) *circular {
 	return &circular{
 		data: make([][]byte, cap),
@@ -47,7 +51,16 @@ func (c *circular) prefix(data ...[]byte) [][]byte {
 	return append(data, c.list()...)
 }
 
-func makePayload(methodName string, args Map) Map {
+func makePayload(methodName string, args Map, id Map) Map {
+	return Map{
+		"jsonrpc": "2.0",
+		"method":  methodName,
+		"params":  args,
+		"id":      id,
+	}
+}
+
+func makePayloadV5(methodName string, args Map) Map {
 	return Map{
 		"type":        "jsonwsp/request",
 		"version":     "1.0",

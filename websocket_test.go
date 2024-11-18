@@ -67,7 +67,7 @@ func TestClient_query(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 250*time.Millisecond)
 	defer cancel()
 
-	err = client.SubmitTx(ctx, []byte(`{}`))
+	_, err = client.SubmitTx(ctx, "fffefdfc")
 	if ok := errors.Is(err, context.DeadlineExceeded); !ok {
 		t.Fatalf("expected context.Canceled; got %v", err)
 	}

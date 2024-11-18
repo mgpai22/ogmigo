@@ -21,6 +21,9 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/chainsync"
+	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/shared"
 )
 
 func TestClient_ChainTip(t *testing.T) {
@@ -39,7 +42,7 @@ func TestClient_ChainTip(t *testing.T) {
 	if !ok {
 		t.Fatalf("got false; want true")
 	}
-	if ps.Hash == "" {
+	if ps.ID == "" {
 		t.Fatalf("got blank; want not blank")
 	}
 	if ps.Slot == 0 {
@@ -100,6 +103,24 @@ func TestClient_CurrentProtocolParameters(t *testing.T) {
 	_ = encoder.Encode(params)
 }
 
+func TestClient_GenesisConfig(t *testing.T) {
+	endpoint := os.Getenv("OGMIOS")
+	if endpoint == "" {
+		t.SkipNow()
+	}
+
+	ctx := context.Background()
+	client := New(WithEndpoint(endpoint), WithLogger(DefaultLogger))
+	params, err := client.GenesisConfig(ctx, "shelley")
+	if err != nil {
+		t.Fatalf("got %#v; want nil", err)
+	}
+
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetIndent("", "  ")
+	_ = encoder.Encode(params)
+}
+
 func TestClient_EraStart(t *testing.T) {
 	endpoint := os.Getenv("OGMIOS")
 	if endpoint == "" {
@@ -113,7 +134,7 @@ func TestClient_EraStart(t *testing.T) {
 		t.Fatalf("got %#v; want nil", err)
 	}
 
-	start := time.Now().Add(-eraStart.Time)
+	start := time.Now().Add(-time.Duration(eraStart.Time.Seconds.Uint64()))
 	fmt.Println(start)
 
 	encoder := json.NewEncoder(os.Stdout)
@@ -137,4 +158,28 @@ func TestClient_UtxosByAddress(t *testing.T) {
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
 	_ = encoder.Encode(utxos)
+}
+
+func TestClient_UtxosByTxIn(t *testing.T) {
+	endpoint := os.Getenv("OGMIOS")
+	if endpoint == "" {
+		t.SkipNow()
+	}
+
+	ctx := context.Background()
+	client := New(WithEndpoint(endpoint), WithLogger(DefaultLogger))
+	utxos, err := client.UtxosByTxIn(ctx, chainsync.TxInQuery{
+		Transaction: shared.UtxoTxID{
+			ID: "0000000000000000000000000000000000000000000000000000000000000000",
+		},
+		Index: 0,
+	})
+
+	if err != nil {
+		t.Fatalf("got %#v; want nil", err)
+	}
+
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetIndent("", "  ")
+	encoder.Encode(utxos)
 }

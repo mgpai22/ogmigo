@@ -20,102 +20,70 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"regexp"
+	"math/big"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/fxamacker/cbor/v2"
 
-	"github.com/SundaeSwap-finance/ogmigo/ouroboros/chainsync/num"
+	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/shared"
 )
 
 var (
-	bNil       = []byte("nil")
+	bNil = []byte("nil")
 )
 
-type AssetID string
-
-func (a AssetID) HasPolicyID(s string) bool {
-	return len(s) == 56 && strings.HasPrefix(string(a), s)
-}
-
-func (a AssetID) HasAssetID(re *regexp.Regexp) bool {
-	return re.MatchString(string(a))
-}
-
-func (a AssetID) IsZero() bool {
-	return a == ""
-}
-
-func (a AssetID) MatchAssetName(re *regexp.Regexp) ([]string, bool) {
-	if assetName := a.AssetName(); len(assetName) > 0 {
-		ss := re.FindStringSubmatch(assetName)
-		return ss, len(ss) > 0
-	}
-	return nil, false
-}
-
-func (a AssetID) String() string {
-	return string(a)
-}
-
-func (a AssetID) AssetName() string {
-	s := string(a)
-	if index := strings.Index(s, "."); index > 0 {
-		return s[index+1:]
-	}
-	return ""
-}
-
-func (a AssetID) AssetNameUTF8() (string, bool) {
-	if data, err := hex.DecodeString(a.AssetName()); err == nil {
-		if utf8.Valid(data) {
-			return string(data), true
-		}
-	}
-	return "", false
-}
-
-func (a AssetID) PolicyID() string {
-	s := string(a)
-	if index := strings.Index(s, "."); index > 0 {
-		return s[:index]
-	}
-	return s // Assets with empty-string name come back as just the policy ID
-}
-
+// All blocks except Byron-era blocks.
 type Block struct {
-	Body       []Tx        `json:"body,omitempty"       dynamodbav:"body,omitempty"`
-	Header     BlockHeader `json:"header,omitempty"     dynamodbav:"header,omitempty"`
-	HeaderHash string      `json:"headerHash,omitempty" dynamodbav:"headerHash,omitempty"`
+	Type         string      `json:"type,omitempty"`
+	Era          string      `json:"era,omitempty"`
+	ID           string      `json:"id,omitempty"`
+	Ancestor     string      `json:"ancestor,omitempty"`
+	Nonce        *Nonce      `json:"nonce,omitempty"`
+	Height       uint64      `json:"height,omitempty"`
+	Size         BlockSize   `json:"size,omitempty"`
+	Slot         uint64      `json:"slot,omitempty"`
+	Transactions []Tx        `json:"transactions,omitempty"`
+	Protocol     Protocol    `json:"protocol,omitempty"`
+	Issuer       BlockIssuer `json:"issuer,omitempty"`
 }
 
-type BlockHeader struct {
-	BlockHash       string                 `json:"blockHash,omitempty"       dynamodbav:"blockHash,omitempty"`
-	BlockHeight     uint64                 `json:"blockHeight,omitempty"     dynamodbav:"blockHeight,omitempty"`
-	BlockSize       uint64                 `json:"blockSize,omitempty"       dynamodbav:"blockSize,omitempty"`
-	IssuerVK        string                 `json:"issuerVK,omitempty"        dynamodbav:"issuerVK,omitempty"`
-	IssuerVrf       string                 `json:"issuerVrf,omitempty"       dynamodbav:"issuerVrf,omitempty"`
-	LeaderValue     map[string][]byte      `json:"leaderValue,omitempty"     dynamodbav:"leaderValue,omitempty"`
-	Nonce           map[string]string      `json:"nonce,omitempty"           dynamodbav:"nonce,omitempty"`
-	OpCert          map[string]interface{} `json:"opCert,omitempty"          dynamodbav:"opCert,omitempty"`
-	PrevHash        string                 `json:"prevHash,omitempty"        dynamodbav:"prevHash,omitempty"`
-	ProtocolVersion map[string]int         `json:"protocolVersion,omitempty" dynamodbav:"protocolVersion,omitempty"`
-	Signature       string                 `json:"signature,omitempty"       dynamodbav:"signature,omitempty"`
-	Slot            uint64                 `json:"slot,omitempty"            dynamodbav:"slot,omitempty"`
+type Nonce struct {
+	Output string `json:"output,omitempty" dynamodbav:"slot,omitempty"`
+	Proof  string `json:"proof,omitempty"  dynamodbav:"slot,omitempty"`
 }
 
-type IntersectionFound struct {
-	Point Point
-	Tip   Point
+type BlockSize struct {
+	Bytes int64 `json:"bytes,omitempty"  dynamodbav:"bytes,omitempty"`
 }
 
-type IntersectionNotFound struct {
-	Tip Point
+type Protocol struct {
+	Version ProtocolVersion `json:"version,omitempty" dynamodbav:"version,omitempty"`
+}
+
+type BlockIssuer struct {
+	VerificationKey        string       `json:"verificationKey,omitempty"`
+	VrfVerificationKey     string       `json:"vrfVerificationKey,omitempty"`
+	OperationalCertificate OpCert       `json:"operationalCertificate,omitempty"`
+	LeaderValue            *LeaderValue `json:"leaderValue,omitempty"`
+}
+
+type OpCert struct {
+	Count uint64 `json:"count,omitempty"`
+	Kes   Kes    `json:"kes,omitempty"`
+}
+
+type Kes struct {
+	Period          uint64 `json:"period,omitempty"`
+	VerificationKey string `json:"verificationKey,omitempty"`
+}
+
+type LeaderValue struct {
+	Output string `json:"output,omitempty"`
+	Proof  string `json:"proof,omitempty"`
 }
 
 type PointType int
@@ -137,9 +105,9 @@ func (p PointString) Point() Point {
 }
 
 type PointStruct struct {
-	BlockNo uint64 `json:"blockNo,omitempty" dynamodbav:"blockNo,omitempty"`
-	Hash    string `json:"hash,omitempty"    dynamodbav:"hash,omitempty"`
-	Slot    uint64 `json:"slot,omitempty"    dynamodbav:"slot,omitempty"`
+	Height *uint64 `json:"height,omitempty" dynamodbav:"height,omitempty"` // Not part of RollBackward.
+	ID     string  `json:"id,omitempty"      dynamodbav:"id,omitempty"`    // BLAKE2b_256 hash
+	Slot   uint64  `json:"slot,omitempty"    dynamodbav:"slot,omitempty"`
 }
 
 func (p PointStruct) Point() Point {
@@ -160,10 +128,10 @@ func (p Point) String() string {
 	case PointTypeString:
 		return string(p.pointString)
 	case PointTypeStruct:
-		if p.pointStruct.BlockNo == 0 {
-			return fmt.Sprintf("slot=%v hash=%v", p.pointStruct.Slot, p.pointStruct.Hash)
+		if p.pointStruct.Height == nil {
+			return fmt.Sprintf("slot=%v id=%v", p.pointStruct.Slot, p.pointStruct.ID)
 		}
-		return fmt.Sprintf("slot=%v hash=%v block=%v", p.pointStruct.Slot, p.pointStruct.Hash, p.pointStruct.BlockNo)
+		return fmt.Sprintf("slot=%v id=%v block=%v", p.pointStruct.Slot, p.pointStruct.ID, *p.pointStruct.Height)
 	default:
 		return "invalid point"
 	}
@@ -327,99 +295,180 @@ type ProtocolVersion struct {
 }
 
 type RollBackward struct {
-	Point Point `json:"point,omitempty" dynamodbav:"point,omitempty"`
-	Tip   Point `json:"tip,omitempty"   dynamodbav:"tip,omitempty"`
+	Direction string            `json:"direction,omitempty" dynamodbav:"direction,omitempty"`
+	Tip       PointStruct       `json:"tip,omitempty"   dynamodbav:"tip,omitempty"`
+	Point     RollBackwardPoint `json:"point,omitempty" dynamodbav:"point,omitempty"`
 }
 
+type RollBackwardPoint struct {
+	Slot uint64 `json:"slot,omitempty"    dynamodbav:"slot,omitempty"`
+	ID   string `json:"id,omitempty"      dynamodbav:"id,omitempty"` // BLAKE2b_256 hash
+}
+
+// Assume non-Byron blocks.
 type RollForward struct {
-	Block RollForwardBlock `json:"block,omitempty" dynamodbav:"block,omitempty"`
-	Tip   Point            `json:"tip,omitempty"   dynamodbav:"tip,omitempty"`
+	Direction string      `json:"direction,omitempty" dynamodbav:"direction,omitempty"`
+	Tip       PointStruct `json:"tip,omitempty"   dynamodbav:"tip,omitempty"`
+	Block     Block       `json:"block,omitempty" dynamodbav:"block,omitempty"`
 }
 
-type RollForwardBlock struct {
-	Allegra *Block      `json:"allegra,omitempty" dynamodbav:"allegra,omitempty"`
-	Alonzo  *Block      `json:"alonzo,omitempty"  dynamodbav:"alonzo,omitempty"`
-	Babbage *Block      `json:"babbage,omitempty" dynamodbav:"babbage,omitempty"`
-	Byron   *ByronBlock `json:"byron,omitempty"   dynamodbav:"byron,omitempty"`
-	Mary    *Block      `json:"mary,omitempty"    dynamodbav:"mary,omitempty"`
-	Shelley *Block      `json:"shelley,omitempty" dynamodbav:"shelley,omitempty"`
+func (b Block) PointStruct() PointStruct {
+	return PointStruct{
+		Height: &b.Height,
+		ID:     b.ID,
+		Slot:   b.Slot,
+	}
 }
 
-func (r RollForwardBlock) PointStruct() PointStruct {
-	if byron := r.Byron; byron != nil {
-		return PointStruct{
-			BlockNo: byron.Header.BlockHeight,
-			Hash:    byron.Hash,
-			Slot:    byron.Header.Slot,
+// Covers everything except Byron-era blocks.
+type ResultFindIntersectionPraos struct {
+	Intersection *Point          `json:"intersection,omitempty" dynamodbav:"intersection,omitempty"`
+	Tip          *PointStruct    `json:"tip,omitempty"          dynamodbav:"tip,omitempty"`
+	Error        *ResultError    `json:"error,omitempty"        dynamodbav:"error,omitempty"`
+	ID           json.RawMessage `json:"id,omitempty"           dynamodbav:"id,omitempty"`
+}
+
+type ResultError struct {
+	Code    uint32          `json:"code,omitempty"    dynamodbav:"code,omitempty"`
+	Message string          `json:"message,omitempty" dynamodbav:"message,omitempty"`
+	Data    json.RawMessage `json:"data,omitempty"    dynamodbav:"data,omitempty"` // Forward
+	ID      json.RawMessage `json:"id,omitempty"      dynamodbav:"id,omitempty"`
+}
+
+// Covers all blocks except Byron-era blocks.
+type ResultNextBlockPraos struct {
+	Direction string       `json:"direction,omitempty" dynamodbav:"direction,omitempty"`
+	Tip       *PointStruct `json:"tip,omitempty"       dynamodbav:"tip,omitempty"`
+	Block     *Block       `json:"block,omitempty"     dynamodbav:"block,omitempty"` // Forward
+	Point     *Point       `json:"point,omitempty"     dynamodbav:"point,omitempty"` // Backward
+}
+
+type ResponsePraos struct {
+	JsonRpc string          `json:"jsonrpc,omitempty" dynamodbav:"jsonrpc,omitempty"`
+	Method  string          `json:"method,omitempty"  dynamodbav:"method,omitempty"`
+	Result  interface{}     `json:"result,omitempty"  dynamodbav:"result,omitempty"`
+	Error   *ResultError    `json:"error,omitempty"   dynamodbav:"error,omitempty"`
+	ID      json.RawMessage `json:"id,omitempty"      dynamodbav:"id,omitempty"`
+}
+
+const FindIntersectionMethod = "findIntersection"
+const NextBlockMethod = "nextBlock"
+const FindIntersectMethod = "FindIntersect"
+const RequestNextMethod = "RequestNext"
+
+const RollForwardString = "forward"
+const RollBackwardString = "backward"
+
+func (r *ResponsePraos) UnmarshalJSON(b []byte) error {
+	var m struct {
+		JsonRpc string          `json:"jsonrpc"`
+		Method  string          `json:"method"`
+		ID      json.RawMessage `json:"ID"`
+		Result  json.RawMessage `json:"result"`
+		Error   json.RawMessage `json:"error"`
+	}
+	if err := json.Unmarshal(b, &m); err != nil {
+		return err
+	}
+
+	r.JsonRpc = m.JsonRpc
+	r.ID = m.ID
+
+	if m.Error != nil {
+		var resultError ResultError
+		if err := json.Unmarshal(m.Error, &resultError); err != nil {
+			return err
+		}
+		r.Error = &resultError
+	} else {
+		switch m.Method {
+		case FindIntersectionMethod, FindIntersectMethod:
+			r.Method = FindIntersectionMethod
+			var findIntersection ResultFindIntersectionPraos
+			if err := json.Unmarshal(m.Result, &findIntersection); err != nil {
+				return err
+			}
+			r.Result = findIntersection
+
+		case NextBlockMethod, RequestNextMethod:
+			r.Method = NextBlockMethod
+			var nextBlock ResultNextBlockPraos
+			if err := json.Unmarshal(m.Result, &nextBlock); err != nil {
+				return err
+			}
+			r.Result = nextBlock
+
+		default:
+			return fmt.Errorf("unknown method: '%v'", r.Method)
 		}
 	}
 
-	var block *Block
-	switch {
-	case r.Allegra != nil:
-		block = r.Allegra
-	case r.Alonzo != nil:
-		block = r.Alonzo
-	case r.Mary != nil:
-		block = r.Mary
-	case r.Shelley != nil:
-		block = r.Shelley
-	case r.Babbage != nil:
-		block = r.Babbage
-	default:
-		return PointStruct{}
-	}
-
-	return PointStruct{
-		BlockNo: block.Header.BlockHeight,
-		Hash:    block.HeaderHash,
-		Slot:    block.Header.Slot,
-	}
+	return nil
 }
 
-type Result struct {
-	IntersectionFound    *IntersectionFound    `json:",omitempty" dynamodbav:",omitempty"`
-	IntersectionNotFound *IntersectionNotFound `json:",omitempty" dynamodbav:",omitempty"`
-	RollForward          *RollForward          `json:",omitempty" dynamodbav:",omitempty"`
-	RollBackward         *RollBackward         `json:",omitempty" dynamodbav:",omitempty"`
+func (r ResponsePraos) MustFindIntersectResult() ResultFindIntersectionPraos {
+	if r.Method != FindIntersectionMethod {
+		panic(fmt.Errorf("must only use *Must* methods after switching on the findIntersection method; called on %v", r.Method))
+	}
+	t, ok := r.Result.(ResultFindIntersectionPraos)
+	if ok {
+		return t
+	}
+	u, ok := r.Result.(*ResultFindIntersectionPraos)
+	if ok && u != nil {
+		return *u
+	}
+	panic(fmt.Errorf("must method used on incompatible type"))
 }
 
-type Response struct {
-	Type        string          `json:"type,omitempty"        dynamodbav:"type,omitempty"`
-	Version     string          `json:"version,omitempty"     dynamodbav:"version,omitempty"`
-	ServiceName string          `json:"servicename,omitempty" dynamodbav:"servicename,omitempty"`
-	MethodName  string          `json:"methodname,omitempty"  dynamodbav:"methodname,omitempty"`
-	Result      *Result         `json:"result,omitempty"      dynamodbav:"result,omitempty"`
-	Reflection  json.RawMessage `json:"reflection,omitempty"  dynamodbav:"reflection,omitempty"`
+func (r ResponsePraos) MustNextBlockResult() ResultNextBlockPraos {
+	if r.Method != NextBlockMethod {
+		panic(fmt.Errorf("must only use *Must* methods after switching on the nextBlock method; called on %v", r.Method))
+	}
+	t, ok := r.Result.(ResultNextBlockPraos)
+	if ok {
+		return t
+	}
+	u, ok := r.Result.(*ResultNextBlockPraos)
+	if ok && u != nil {
+		return *u
+	}
+	panic(fmt.Errorf("must method used on incompatible type"))
+}
+
+type Signature struct {
+	Key               string `json:"key" dynamodbav:"key"`
+	Signature         string `json:"signature" dynamodbav:"signature"`
+	ChainCode         string `json:"chainCode,omitempty" dynamodbav:"chainCode,omitempty"`
+	AddressAttributes string `json:"addressAttributes,omitempty" dynamodbav:"addressAttributes,omitempty"`
 }
 
 type Tx struct {
-	ID          string          `json:"id,omitempty"       dynamodbav:"id,omitempty"`
-	InputSource string          `json:"inputSource,omitempty"  dynamodbav:"inputSource,omitempty"`
-	Body        TxBody          `json:"body,omitempty"     dynamodbav:"body,omitempty"`
-	Witness     Witness         `json:"witness,omitempty"  dynamodbav:"witness,omitempty"`
-	Metadata    json.RawMessage `json:"metadata,omitempty" dynamodbav:"metadata,omitempty"`
-	// Raw serialized transaction, base64.
-	Raw string `json:"raw,omitempty" dynamodbav:"raw,omitempty"`
-}
-
-type TxBody struct {
-	Certificates            []json.RawMessage `json:"certificates,omitempty"            dynamodbav:"certificates,omitempty"`
-	Collaterals             []TxIn            `json:"collaterals,omitempty"             dynamodbav:"collaterals,omitempty"`
-	Fee                     num.Int           `json:"fee,omitempty"                     dynamodbav:"fee,omitempty"`
-	Inputs                  []TxIn            `json:"inputs,omitempty"                  dynamodbav:"inputs,omitempty"`
-	Mint                    *Value            `json:"mint,omitempty"                    dynamodbav:"mint,omitempty"`
-	Network                 json.RawMessage   `json:"network,omitempty"                 dynamodbav:"network,omitempty"`
-	Outputs                 TxOuts            `json:"outputs,omitempty"                 dynamodbav:"outputs,omitempty"`
-	RequiredExtraSignatures []string          `json:"requiredExtraSignatures,omitempty" dynamodbav:"requiredExtraSignatures,omitempty"`
-	ScriptIntegrityHash     string            `json:"scriptIntegrityHash,omitempty"     dynamodbav:"scriptIntegrityHash,omitempty"`
-	TimeToLive              int64             `json:"timeToLive,omitempty"              dynamodbav:"timeToLive,omitempty"`
-	Update                  json.RawMessage   `json:"update,omitempty"                  dynamodbav:"update,omitempty"`
-	ValidityInterval        ValidityInterval  `json:"validityInterval"                  dynamodbav:"validityInterval,omitempty"`
-	Withdrawals             map[string]int64  `json:"withdrawals,omitempty"             dynamodbav:"withdrawals,omitempty"`
-	CollateralReturn        *TxOut            `json:"collateralReturn,omitempty"        dynamodbav:"collateralReturn,omitempty"`
-	TotalCollateral         *int64            `json:"totalCollateral,omitempty"         dynamodbav:"totalCollateral,omitempty"`
-	References              []TxIn            `json:"references,omitempty"              dynamodbav:"references,omitempty"`
+	ID                       string                  `json:"id,omitempty"                       dynamodbav:"id,omitempty"`
+	Spends                   string                  `json:"spends,omitempty"                   dynamodbav:"spends,omitempty"`
+	Inputs                   []TxIn                  `json:"inputs,omitempty"                   dynamodbav:"inputs,omitempty"`
+	References               []TxIn                  `json:"references,omitempty"               dynamodbav:"references,omitempty"`
+	Collaterals              []TxIn                  `json:"collaterals,omitempty"              dynamodbav:"collaterals,omitempty"`
+	TotalCollateral          *shared.Value           `json:"totalCollateral,omitempty"          dynamodbav:"totalCollateral,omitempty"`
+	CollateralReturn         *TxOut                  `json:"collateralReturn,omitempty"         dynamodbav:"collateralReturn,omitempty"`
+	Outputs                  TxOuts                  `json:"outputs,omitempty"                  dynamodbav:"outputs,omitempty"`
+	Certificates             []json.RawMessage       `json:"certificates,omitempty"             dynamodbav:"certificates,omitempty"`
+	Withdrawals              map[string]shared.Value `json:"withdrawals,omitempty"              dynamodbav:"withdrawals,omitempty"`
+	Fee                      shared.Value            `json:"fee,omitempty"                      dynamodbav:"fee,omitempty"`
+	ValidityInterval         ValidityInterval        `json:"validityInterval"                   dynamodbav:"validityInterval,omitempty"`
+	Mint                     shared.Value            `json:"mint,omitempty"                     dynamodbav:"mint,omitempty"`
+	Network                  json.RawMessage         `json:"network,omitempty"                  dynamodbav:"network,omitempty"`
+	ScriptIntegrityHash      string                  `json:"scriptIntegrityHash,omitempty"      dynamodbav:"scriptIntegrityHash,omitempty"`
+	RequiredExtraSignatories []string                `json:"requiredExtraSignatories,omitempty" dynamodbav:"requiredExtraSignatories,omitempty"`
+	RequiredExtraScripts     []string                `json:"requiredExtraScripts,omitempty"     dynamodbav:"requiredExtraScripts,omitempty"`
+	Proposals                json.RawMessage         `json:"proposals,omitempty"                dynamodbav:"proposals,omitempty"`
+	Votes                    json.RawMessage         `json:"votes,omitempty"                    dynamodbav:"votes,omitempty"`
+	Metadata                 json.RawMessage         `json:"metadata,omitempty"                 dynamodbav:"metadata,omitempty"`
+	Signatories              []Signature             `json:"signatories,omitempty"              dynamodbav:"signatories,omitempty"`
+	Scripts                  json.RawMessage         `json:"scripts,omitempty"                  dynamodbav:"scripts,omitempty"`
+	Datums                   Datums                  `json:"datums"                             dynamodbav:"datums,omitempty"`
+	Redeemers                json.RawMessage         `json:"redeemers,omitempty"                dynamodbav:"redeemers,omitempty"`
+	CBOR                     string                  `json:"cbor,omitempty"                     dynamodbav:"cbor,omitempty"`
 }
 
 type TxID string
@@ -449,40 +498,40 @@ func (t TxID) TxHash() string {
 }
 
 type TxIn struct {
-	TxHash string `json:"txId"  dynamodbav:"txId"`
-	Index  int    `json:"index" dynamodbav:"index"`
+	Transaction TxInID `json:"transaction"  dynamodbav:"transaction"`
+	Index       int    `json:"index" dynamodbav:"index"`
+}
+
+type TxIns []TxIn
+
+type TxInID struct {
+	ID string `json:"id"  dynamodbav:"id"`
 }
 
 func (t TxIn) String() string {
-	return t.TxHash + "#" + strconv.Itoa(t.Index)
+	return t.Transaction.ID + "#" + strconv.Itoa(t.Index)
 }
 
 func (t TxIn) TxID() TxID {
-	return NewTxID(t.TxHash, t.Index)
+	return NewTxID(t.Transaction.ID, t.Index)
 }
 
 type TxOut struct {
 	Address   string          `json:"address,omitempty"   dynamodbav:"address,omitempty"`
 	Datum     string          `json:"datum,omitempty"     dynamodbav:"datum,omitempty"`
 	DatumHash string          `json:"datumHash,omitempty" dynamodbav:"datumHash,omitempty"`
-	Value     Value           `json:"value,omitempty"     dynamodbav:"value,omitempty"`
+	Value     shared.Value    `json:"value,omitempty"     dynamodbav:"value,omitempty"`
 	Script    json.RawMessage `json:"script,omitempty"    dynamodbav:"script,omitempty"`
 }
 
 type TxOuts []TxOut
 
-func (tt TxOuts) FindByAssetID(assetID AssetID) (TxOut, bool) {
-	for _, t := range tt {
-		for gotAssetID := range t.Value.Assets {
-			if gotAssetID == assetID {
-				return t, true
-			}
-		}
-	}
-	return TxOut{}, false
-}
-
 type Datums map[string]string
+
+type TxInQuery struct {
+	Transaction shared.UtxoTxID `json:"transaction"  dynamodbav:"transaction"`
+	Index       uint32          `json:"index" dynamodbav:"index"`
+}
 
 func (d *Datums) UnmarshalJSON(i []byte) error {
 	if i == nil {
@@ -545,56 +594,190 @@ func (d *Datums) UnmarshalDynamoDBAttributeValue(item *dynamodb.AttributeValue) 
 
 type Witness struct {
 	Bootstrap  []json.RawMessage `json:"bootstrap,omitempty"  dynamodbav:"bootstrap,omitempty"`
-	Datums     Datums            `json:"datums,omitempty"     dynamodbav:"datums,omitempty"`
+	Datums     Datums            `json:"datums"     dynamodbav:"datums,omitempty"`
 	Redeemers  json.RawMessage   `json:"redeemers,omitempty"  dynamodbav:"redeemers,omitempty"`
 	Scripts    json.RawMessage   `json:"scripts,omitempty"    dynamodbav:"scripts,omitempty"`
 	Signatures map[string]string `json:"signatures,omitempty" dynamodbav:"signatures,omitempty"`
 }
 
 type ValidityInterval struct {
-	InvalidBefore    uint64 `json:"invalidBefore,omitempty"    dynamodbav:"invalidBefore,omitempty"`
-	InvalidHereafter uint64 `json:"invalidHereafter,omitempty" dynamodbav:"invalidHereafter,omitempty"`
+	InvalidBefore uint64 `json:"invalidBefore,omitempty" dynamodbav:"invalidBefore,omitempty"`
+	InvalidAfter  uint64 `json:"invalidAfter,omitempty"  dynamodbav:"invalidAfter,omitempty"`
 }
 
-type Value struct {
-	Coins  num.Int             `json:"coins,omitempty"  dynamodbav:"coins,omitempty"`
-	Assets map[AssetID]num.Int `json:"assets,omitempty" dynamodbav:"assets,omitempty"`
+type OgmiosAuxiliaryDataV6 struct {
+	Hash   string
+	Labels *OgmiosAuxiliaryDataLabelsV6
 }
 
-func Add(a Value, b Value) Value {
-	var result Value
-	result.Coins = a.Coins.Add(b.Coins)
-	result.Assets = map[AssetID]num.Int{}
-	for assetId, amt := range a.Assets {
-		result.Assets[assetId] = amt
+type OgmiosAuxiliaryDataLabelsV6 map[int]OgmiosMetadatumRecordV6
+
+func (o *OgmiosAuxiliaryDataV6) UnmarshalJSON(data []byte) error {
+	var s struct {
+		Hash   string
+		Labels *OgmiosAuxiliaryDataLabelsV6
 	}
-	for assetId, amt := range b.Assets {
-		result.Assets[assetId] = result.Assets[assetId].Add(amt)
+	err := json.Unmarshal(data, &s)
+	if err != nil {
+		return err
 	}
-	return result
+	if s.Hash == "" {
+		return fmt.Errorf("OgmiosAuxiliaryData: UnmarshalJSON: Hash is empty")
+	}
+	o.Hash = s.Hash
+	o.Labels = s.Labels
+	return nil
 }
-func Subtract(a Value, b Value) Value {
-	var result Value
-	result.Coins = a.Coins.Sub(b.Coins)
-	result.Assets = map[AssetID]num.Int{}
-	for assetId, amt := range a.Assets {
-		result.Assets[assetId] = amt
-	}
-	for assetId, amt := range b.Assets {
-		result.Assets[assetId] = result.Assets[assetId].Sub(amt)
-	}
-	return result
+
+type OgmiosMetadatumRecordV6 struct {
+	Cbor *string          `json:"cbor"`
+	Json *OgmiosMetadatum `json:"json"`
 }
-func Enough(have Value, want Value) (bool, error) {
-	if have.Coins.Int64() < want.Coins.Int64() {
-		return false, fmt.Errorf("not enough ADA to meet demand")
+
+type OgmiosMetadatumKind int
+
+type OgmiosMetadatum struct {
+	Tag         OgmiosMetadatumKind
+	IntField    *big.Int              `json:"int"`
+	StringField string                `json:"string"`
+	BytesField  []byte                `json:"bytes"`
+	ListField   []*OgmiosMetadatum    `json:"list"`
+	MapField    []*OgmiosMetadatumMap `json:"map"`
+}
+
+const (
+	OgmiosMetadatumTagUnknown OgmiosMetadatumKind = iota
+	OgmiosMetadatumTagInt
+	OgmiosMetadatumTagString
+	OgmiosMetadatumTagBytes
+	OgmiosMetadatumTagList
+	OgmiosMetadatumTagMap
+)
+
+func (o *OgmiosMetadatum) UnmarshalJSON(data []byte) error {
+	type intField struct {
+		X *big.Int `json:"int"`
 	}
-	for asset, amt := range want.Assets {
-		if have.Assets[asset].Int64() < amt.Int64() {
-			return false, fmt.Errorf("not enough %v to meet demand", asset)
+	var i intField
+	if err := json.Unmarshal(data, &i); err == nil && i.X != nil {
+		o.Tag = OgmiosMetadatumTagInt
+		o.IntField = i.X
+		return nil
+	}
+	type stringField struct {
+		X *string `json:"string"`
+	}
+	var s stringField
+	if err := json.Unmarshal(data, &s); err == nil && s.X != nil {
+		o.Tag = OgmiosMetadatumTagString
+		o.StringField = *s.X
+		return nil
+	}
+	type bytesField struct {
+		X *string `json:"bytes"`
+	}
+	var b bytesField
+	if err := json.Unmarshal(data, &b); err == nil && b.X != nil {
+		dec, err := hex.DecodeString(*b.X)
+		if err != nil {
+			return err
 		}
+		o.Tag = OgmiosMetadatumTagBytes
+		o.BytesField = dec
+		return nil
 	}
-	return true, nil
+	type listField struct {
+		X *[]*OgmiosMetadatum `json:"list"`
+	}
+	var l listField
+	if err := json.Unmarshal(data, &l); err == nil && l.X != nil {
+		o.Tag = OgmiosMetadatumTagList
+		o.ListField = *l.X
+		return nil
+	}
+	type mapField struct {
+		X *[]*OgmiosMetadatumMap `json:"map"`
+	}
+	var m mapField
+	if err := json.Unmarshal(data, &m); err == nil && m.X != nil {
+		o.Tag = OgmiosMetadatumTagMap
+		o.MapField = *m.X
+		return nil
+	}
+	return fmt.Errorf("Can't unmarshal %s as OgmiosMetadatum", data)
+}
+
+type OgmiosMetadatumMap struct {
+	Key   *OgmiosMetadatum `json:"k"`
+	Value *OgmiosMetadatum `json:"v"`
+}
+
+func GetMetadataDatums(datums map[string][]byte) ([][]byte, error) {
+	var datumBytes [][]byte
+	for _, datum := range datums {
+		datumBytes = append(datumBytes, datum)
+	}
+	return datumBytes, nil
+}
+
+func GetMetadataDatumsV6(txMetadata json.RawMessage, metadataDatumKey int) ([][]byte, error) {
+	datums, err := GetMetadataDatumMapV6(txMetadata, metadataDatumKey)
+	if err != nil {
+		return nil, err
+	}
+	return GetMetadataDatums(datums)
+}
+
+func GetMetadataDatumMapV6(txMetadata json.RawMessage, metadataDatumKey int) (map[string][]byte, error) {
+	// Ogmios will sometimes set the Metadata field to "null" when there's not
+	// any actual metadata. This can lead to unintended errors. If we encounter
+	// this case, just return an empty map.
+	if bytes.Equal(txMetadata, json.RawMessage("null")) {
+		var dummyMap map[string][]byte
+		return dummyMap, nil
+	}
+
+	var auxData OgmiosAuxiliaryDataV6
+	err := json.Unmarshal(txMetadata, &auxData)
+	if err != nil {
+		return nil, err
+	}
+	labels := *(auxData.Labels)
+	dats, ok := labels[metadataDatumKey]
+	if !ok {
+		return nil, nil
+	}
+	return ReconstructDatums(*(dats.Json))
+}
+
+func ReconstructDatums(metadatum OgmiosMetadatum) (map[string][]byte, error) {
+	newDatums := make(map[string][]byte, 0)
+	switch metadatum.Tag {
+	case OgmiosMetadatumTagMap:
+		for _, mapItem := range metadatum.MapField {
+			k := mapItem.Key
+			switch k.Tag {
+			case OgmiosMetadatumTagBytes:
+				reconstructed := make([]byte, 0)
+				v := mapItem.Value
+				switch v.Tag {
+				case OgmiosMetadatumTagList:
+					for _, chunk := range v.ListField {
+						reconstructed = append(reconstructed, chunk.BytesField...)
+					}
+					newDatums[hex.EncodeToString(k.BytesField)] = reconstructed
+				default: // Misformed, ignore
+					continue
+				}
+			default: // Misformed, ignore
+				continue
+			}
+		}
+	default: // Misformed, ignore
+		fmt.Print("Misformed")
+		return nil, nil
+	}
+	return newDatums, nil
 }
 func Equals(left Value, right Value) bool {
 	if left.Coins.String() != right.Coins.String() {

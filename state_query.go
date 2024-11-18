@@ -18,15 +18,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/big"
 
-	"github.com/SundaeSwap-finance/ogmigo/ouroboros/chainsync"
-	"github.com/SundaeSwap-finance/ogmigo/ouroboros/statequery"
+	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/chainsync"
+	v5 "github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/chainsync/v5"
+	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/shared"
+	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/statequery"
 )
 
 func (c *Client) ChainTip(ctx context.Context) (chainsync.Point, error) {
 	var (
-		payload = makePayload("Query", Map{"query": "ledgerTip"})
+		payload = makePayload("queryLedgerState/tip", Map{}, nil)
 		content struct{ Result chainsync.Point }
 	)
 
@@ -37,9 +38,22 @@ func (c *Client) ChainTip(ctx context.Context) (chainsync.Point, error) {
 	return content.Result, nil
 }
 
+func (c *Client) ChainTipV5(ctx context.Context) (v5.PointV5, error) {
+	var (
+		payload = makePayloadV5("Query", Map{"query": "ledgerTip"})
+		content struct{ Result v5.PointV5 }
+	)
+
+	if err := c.query(ctx, payload, &content); err != nil {
+		return v5.PointV5{}, err
+	}
+
+	return content.Result, nil
+}
+
 func (c *Client) CurrentEpoch(ctx context.Context) (uint64, error) {
 	var (
-		payload = makePayload("Query", Map{"query": "currentEpoch"})
+		payload = makePayload("queryLedgerState/epoch", Map{}, nil)
 		content struct{ Result uint64 }
 	)
 
@@ -52,7 +66,7 @@ func (c *Client) CurrentEpoch(ctx context.Context) (uint64, error) {
 
 func (c *Client) CurrentProtocolParameters(ctx context.Context) (json.RawMessage, error) {
 	var (
-		payload = makePayload("Query", Map{"query": "currentProtocolParameters"})
+		payload = makePayload("queryLedgerState/protocolParameters", Map{}, nil)
 		content struct{ Result json.RawMessage }
 	)
 
@@ -60,6 +74,43 @@ func (c *Client) CurrentProtocolParameters(ctx context.Context) (json.RawMessage
 		return nil, err
 	}
 
+	return content.Result, nil
+}
+
+func (c *Client) CurrentProtocolParametersV5(ctx context.Context) (json.RawMessage, error) {
+	var (
+		payload = makePayloadV5("Query", Map{"query": "currentProtocolParameters"})
+		content struct{ Result json.RawMessage }
+	)
+
+	if err := c.query(ctx, payload, &content); err != nil {
+		return nil, err
+	}
+
+	return content.Result, nil
+}
+
+func (c *Client) GenesisConfig(ctx context.Context, era string) (json.RawMessage, error) {
+	var (
+		payload = makePayload("queryNetwork/genesisConfiguration", Map{"era": era}, nil)
+		content struct{ Result json.RawMessage }
+	)
+
+	if err := c.query(ctx, payload, &content); err != nil {
+		return nil, err
+	}
+
+	return content.Result, nil
+}
+
+func (c *Client) StartTime(ctx context.Context) (string, error) {
+	var (
+		payload = makePayload("queryNetwork/startTime", nil, nil)
+		content struct{ Result string }
+	)
+	if err := c.query(ctx, payload, &content); err != nil {
+		return "", err
+	}
 	return content.Result, nil
 }
 
@@ -74,20 +125,20 @@ type EraSummary struct {
 }
 
 type EraBound struct {
-	Time  big.Int `json:"time"` // Picosecond precision, too big for uint64
-	Slot  uint64  `json:"slot"`
-	Epoch uint64  `json:"epoch"`
+	Time  statequery.EraSeconds `json:"time"`
+	Slot  uint64                `json:"slot"`
+	Epoch uint64                `json:"epoch"`
 }
 
 type EraParameters struct {
-	EpochLength uint64 `json:"epochLength"`
-	SlotLength  uint64 `json:"slotLength"`
-	SafeZone    uint64 `json:"safeZone"`
+	EpochLength uint64                     `json:"epochLength"`
+	SlotLength  statequery.EraMilliseconds `json:"slotLength"`
+	SafeZone    uint64                     `json:"safeZone"`
 }
 
 func (c *Client) EraSummaries(ctx context.Context) (*EraHistory, error) {
 	var (
-		payload = makePayload("Query", Map{"query": "eraSummaries"})
+		payload = makePayload("queryLedgerState/eraSummaries", Map{}, nil)
 		content struct{ Result json.RawMessage }
 	)
 
@@ -105,9 +156,32 @@ func (c *Client) EraSummaries(ctx context.Context) (*EraHistory, error) {
 	}, nil
 }
 
+func SlotToElapsedMilliseconds(history *EraHistory, slot uint64) uint64 {
+	totalMsElapsed := uint64(0)
+	for _, summary := range history.Summaries {
+		intervalEnd := uint64(0)
+		if summary.End.Slot < slot {
+			// The era has passed
+			intervalEnd = summary.End.Slot
+		} else if summary.Start.Slot < slot {
+			// The era is in progress
+			intervalEnd = slot
+		} else {
+			// The era is in the future
+			continue
+		}
+		// Compute the number of elapsed milliseconds for this era
+		slotsElapsedThisEra := intervalEnd - summary.Start.Slot
+		slotLengthMs := summary.Parameters.SlotLength.Milliseconds.Uint64()
+		msElapsedThisEra := slotsElapsedThisEra * slotLengthMs
+		totalMsElapsed += msElapsedThisEra
+	}
+	return totalMsElapsed
+}
+
 func (c *Client) EraStart(ctx context.Context) (statequery.EraStart, error) {
 	var (
-		payload = makePayload("Query", Map{"query": "eraStart"})
+		payload = makePayload("queryLedgerState/eraStart", Map{}, nil)
 		content struct{ Result statequery.EraStart }
 	)
 
@@ -118,10 +192,10 @@ func (c *Client) EraStart(ctx context.Context) (statequery.EraStart, error) {
 	return content.Result, nil
 }
 
-func (c *Client) UtxosByAddress(ctx context.Context, addresses ...string) ([]statequery.Utxo, error) {
+func (c *Client) UtxosByAddress(ctx context.Context, addresses ...string) ([]shared.Utxo, error) {
 	var (
-		payload = makePayload("Query", Map{"query": Map{"utxo": addresses}})
-		content struct{ Result []statequery.Utxo }
+		payload = makePayload("queryLedgerState/utxo", Map{"addresses": addresses}, nil)
+		content struct{ Result []shared.Utxo }
 	)
 
 	if err := c.query(ctx, payload, &content); err != nil {
@@ -131,10 +205,10 @@ func (c *Client) UtxosByAddress(ctx context.Context, addresses ...string) ([]sta
 	return content.Result, nil
 }
 
-func (c *Client) UtxosByTxIn(ctx context.Context, txIns ...chainsync.TxIn) ([]statequery.Utxo, error) {
+func (c *Client) UtxosByTxIn(ctx context.Context, txIns ...chainsync.TxInQuery) ([]shared.Utxo, error) {
 	var (
-		payload = makePayload("Query", Map{"query": Map{"utxo": txIns}})
-		content struct{ Result []statequery.Utxo }
+		payload = makePayload("queryLedgerState/utxo", Map{"outputReferences": txIns}, nil)
+		content struct{ Result []shared.Utxo }
 	)
 
 	if err := c.query(ctx, payload, &content); err != nil {

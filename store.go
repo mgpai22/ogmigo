@@ -18,7 +18,7 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/SundaeSwap-finance/ogmigo/ouroboros/chainsync"
+	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/chainsync"
 )
 
 // Store allows points to be saved and retrieved to allow graceful recovery
@@ -46,8 +46,10 @@ func (l *loggingStore) Save(_ context.Context, point chainsync.Point) error {
 	var kvs []KeyValue
 	if ps, ok := point.PointStruct(); ok {
 		kvs = append(kvs, KV("slot", strconv.FormatUint(ps.Slot, 10)))
-		kvs = append(kvs, KV("block", strconv.FormatUint(ps.BlockNo, 10)))
-		kvs = append(kvs, KV("hash", ps.Hash))
+		if ps.Height != nil {
+			kvs = append(kvs, KV("block", strconv.FormatUint(*ps.Height, 10)))
+		}
+		kvs = append(kvs, KV("id", ps.ID))
 	}
 	l.logger.Info("save point", kvs...)
 	return nil

@@ -4,14 +4,15 @@ import (
 	"context"
 	"testing"
 
-	"github.com/SundaeSwap-finance/ogmigo/ouroboros/chainsync"
+	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/chainsync"
 )
 
 func TestNewLoggingStore(t *testing.T) {
+	h := uint64(123)
 	p := chainsync.PointStruct{
-		BlockNo: 123,
-		Hash:    "hash",
-		Slot:    456,
+		Height: &h,
+		ID:     "hash",
+		Slot:   456,
 	}
 
 	ctx := context.Background()

@@ -16,12 +16,12 @@ package ogmigo
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/tj/assert"
 )
 
 func TestClient_SubmitTx(t *testing.T) {
@@ -32,29 +32,28 @@ func TestClient_SubmitTx(t *testing.T) {
 
 	ctx := context.Background()
 	client := New(WithEndpoint(endpoint), WithLogger(DefaultLogger))
-	err := client.SubmitTx(ctx, []byte("blah"))
+	_, err := client.SubmitTx(ctx, "00010203")
 	if err == nil {
 		t.Fatalf("expected error, got %v", err)
 	}
 }
 
 func TestSubmitTxResult(t *testing.T) {
-	err := filepath.Walk("ext/ogmios/server/test/vectors/TxSubmission", testSubmitTxResult(t))
-	if err != nil {
-		t.Fatalf("got %v; want nil", err)
-	}
+	err := filepath.Walk("ext/ogmios/server/test/vectors/SubmitTransactionResponse", testSubmitTxResult(t))
+	assert.Nil(t, err)
 }
 
 func testSubmitTxResult(t *testing.T) filepath.WalkFunc {
 	return func(path string, info fs.FileInfo, err error) error {
 		t.Run(filepath.Base(path), func(t *testing.T) {
 			if err != nil {
-				t.Fatalf("got %v; want nil", err)
+				t.Fatalf("Ogmios files missing. You may need to `rm -rf ext/ogmios/ && git clone git@github.com:CardanoSolutions/ogmios.git ext/ogmios/")
 			}
 			if info.IsDir() {
 				return
 			}
 
+			_, err := ioutil.ReadFile(path)
 			data, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatalf("got %v; want nil", err)
@@ -72,9 +71,6 @@ func testSubmitTxResult(t *testing.T) filepath.WalkFunc {
 				}
 				fmt.Println(keys)
 				return
-			}
-			if err != nil {
-				t.Fatalf("got %v; want nil", err)
 			}
 		})
 
