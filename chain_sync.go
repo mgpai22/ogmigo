@@ -365,14 +365,14 @@ func getPoint(data ...[]byte) (chainsync.Point, bool) {
 
 // isTemporaryError returns true if the error is recoverable
 func isTemporaryError(err error) bool {
-	var wce *websocket.CloseError
+	wce := &websocket.CloseError{}
 	if ok := errors.As(err, &wce); ok && wce.Code == websocket.CloseAbnormalClosure {
 		return true
 	}
 
-	var noe *net.OpError
+	noe := &net.OpError{}
 	if ok := errors.As(err, &noe); ok {
-		var sce *os.SyscallError
+		sce := &os.SyscallError{}
 		if ok := errors.As(noe.Err, &sce); ok && sce.Syscall == "connect" {
 			return true
 		}

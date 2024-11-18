@@ -157,7 +157,7 @@ func TestClient_UtxosByAddress(t *testing.T) {
 
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
-	encoder.Encode(utxos)
+	_ = encoder.Encode(utxos)
 }
 
 func TestClient_UtxosByTxIn(t *testing.T) {

@@ -27,6 +27,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/SundaeSwap-finance/ogmigo/ouroboros/chainsync/num"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/fxamacker/cbor/v2"
@@ -1355,7 +1356,7 @@ func TestVasil_DatumParsing_Hex(t *testing.T) {
 }
 
 func TestVasil_BackwardsCompatibleWithExistingDynamoDB(t *testing.T) {
-	data, err := ioutil.ReadFile("testdata/scoop.json")
+	data, err := os.ReadFile("testdata/scoop.json")
 	assert.Nil(t, err)
 
 	var item map[string]*dynamodb.AttributeValue
@@ -1480,4 +1481,25 @@ func Test_UnmarshalOgmiosMetadataV6(t *testing.T) {
 	var o OgmiosAuxiliaryDataLabelsV6
 	err := json.Unmarshal(meta, &o)
 	assert.Nil(t, err)
+}
+
+func TestValue_Equals(t *testing.T) {
+	assert.True(t, Equals(Value{Coins: num.Uint64(0)}, Value{Coins: num.Uint64(0)}))
+	assert.True(t, Equals(
+		Value{Coins: num.Uint64(1), Assets: map[AssetID]num.Int{"A": num.Uint64(10), "B": num.Uint64(0)}},
+		Value{Coins: num.Uint64(1), Assets: map[AssetID]num.Int{"A": num.Uint64(10), "B": num.Uint64(0)}},
+	))
+	assert.True(t, Equals(
+		Value{Coins: num.Uint64(1), Assets: map[AssetID]num.Int{"A": num.Uint64(10), "B": num.Uint64(15)}},
+		Value{Coins: num.Uint64(1), Assets: map[AssetID]num.Int{"A": num.Uint64(10), "B": num.Uint64(15)}},
+	))
+	assert.False(t, Equals(Value{Coins: num.Uint64(0)}, Value{Coins: num.Uint64(1)}))
+	assert.False(t, Equals(
+		Value{Coins: num.Uint64(1), Assets: map[AssetID]num.Int{"A": num.Uint64(10), "B": num.Uint64(0)}},
+		Value{Coins: num.Uint64(1)},
+	))
+	assert.False(t, Equals(
+		Value{Coins: num.Uint64(1), Assets: map[AssetID]num.Int{"A": num.Uint64(10), "B": num.Uint64(10)}},
+		Value{Coins: num.Uint64(1), Assets: map[AssetID]num.Int{"A": num.Uint64(10), "B": num.Uint64(15)}},
+	))
 }
