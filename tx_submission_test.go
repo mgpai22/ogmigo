@@ -16,6 +16,8 @@ package ogmigo
 
 import (
 	"context"
+	"fmt"
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -53,14 +55,13 @@ func testSubmitTxResult(t *testing.T) filepath.WalkFunc {
 				return
 			}
 
-			_, err := ioutil.ReadFile(path)
 			data, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatalf("got %v; want nil", err)
 			}
 
-			err = readSubmitTx(data)
-			var ste SubmitTxError
+			err = readSubmitTxV5(data)
+			var ste SubmitTxErrorV5
 			if ok := errors.As(err, &ste); ok {
 				keys, err := ste.ErrorCodes()
 				if err != nil {
