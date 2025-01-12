@@ -59,13 +59,3 @@ func makePayload(methodName string, args Map, id Map) Map {
 		"id":      id,
 	}
 }
-
-func makePayloadV5(methodName string, args Map) Map {
-	return Map{
-		"type":        "jsonwsp/request",
-		"version":     "1.0",
-		"servicename": "ogmios",
-		"methodname":  methodName,
-		"args":        args,
-	}
-}
