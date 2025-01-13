@@ -1,3 +1,5 @@
+github.com/SundaeSwap-finance/ogmigo/v6 v6.0.0 h1:f+BDYFKDFD574LbjCQspFryJc165DGLDCs6CLf1U0Ek=
+github.com/SundaeSwap-finance/ogmigo/v6 v6.0.0/go.mod h1:CsDGcgbkKoz6S4h0RJ30go7oXG+KhGE2KLhBpRFnEqA=
 github.com/aws/aws-sdk-go v1.44.197 h1:pkg/NZsov9v/CawQWy+qWVzJMIZRQypCtYjUBXFomF8=
 github.com/aws/aws-sdk-go v1.44.197/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=

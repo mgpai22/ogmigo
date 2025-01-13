@@ -6,27 +6,27 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
 	"time"
 
-	"github.com/SundaeSwap-finance/ogmigo/v6"
-	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/chainsync"
-	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/chainsync/compatibility"
+	"github.com/SundaeSwap-finance/ogmigo"
+	"github.com/SundaeSwap-finance/ogmigo/ouroboros/chainsync"
 )
 
 func main() {
 	var callback ogmigo.ChainSyncFunc = func(ctx context.Context, data []byte) error {
 
 		// Quick-and-dirty way to distinguish b/w 2 different responses.
-		var response compatibility.CompatibleResponsePraos
+		var response chainsync.ResponsePraos
 		if err := json.Unmarshal(data, &response); err != nil {
 			fmt.Printf("Failed Unmarshal: %v\n", err)
 			return nil
 		}
 
 		switch response.Method {
-		case chainsync.FindIntersectionMethod, chainsync.FindIntersectMethod:
+		case chainsync.FindIntersectionMethod:
 			fmt.Printf("CompatibleResultFindIntersection - %v\n", response.Result)
-		case chainsync.NextBlockMethod, chainsync.RequestNextMethod:
+		case chainsync.NextBlockMethod:
 			fmt.Printf("CompatibleResultNextBlock - %v\n", response.Result)
 		default:
 			fmt.Printf("Unsupported method: %v\n", response.Method)
@@ -39,7 +39,7 @@ func main() {
 	flag.Parse()
 	ctx := context.Background()
 
-	ogmios_addr := "ws://100.72.33.61:1339"
+	ogmios_addr := os.Getenv("OGMIOS") // "ws://100.72.33.61:1339"
 	my_client := ogmigo.New(ogmigo.WithEndpoint(ogmios_addr))
 	closer, err := my_client.ChainSync(ctx, callback)
 	if err != nil {
