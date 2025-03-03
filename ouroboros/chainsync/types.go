@@ -747,6 +747,9 @@ func GetMetadataDatumMapV6(txMetadata json.RawMessage, metadataDatumKey int) (ma
 	if !ok {
 		return nil, nil
 	}
+	if dats.Json == nil {
+		return nil, fmt.Errorf("transaction metadata at key '%d' is missing a json representation: '%v' (is ogmios running with --metadata-detailed-schema?)", metadataDatumKey, string(txMetadata))
+	}
 	return ReconstructDatums(*(dats.Json))
 }
 
