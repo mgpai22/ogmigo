@@ -1482,24 +1482,3 @@ func Test_UnmarshalOgmiosMetadataV6(t *testing.T) {
 	err := json.Unmarshal(meta, &o)
 	assert.Nil(t, err)
 }
-
-func TestValue_Equals(t *testing.T) {
-	assert.True(t, Equals(Value{Coins: num.Uint64(0)}, Value{Coins: num.Uint64(0)}))
-	assert.True(t, Equals(
-		Value{Coins: num.Uint64(1), Assets: map[AssetID]num.Int{"A": num.Uint64(10), "B": num.Uint64(0)}},
-		Value{Coins: num.Uint64(1), Assets: map[AssetID]num.Int{"A": num.Uint64(10), "B": num.Uint64(0)}},
-	))
-	assert.True(t, Equals(
-		Value{Coins: num.Uint64(1), Assets: map[AssetID]num.Int{"A": num.Uint64(10), "B": num.Uint64(15)}},
-		Value{Coins: num.Uint64(1), Assets: map[AssetID]num.Int{"A": num.Uint64(10), "B": num.Uint64(15)}},
-	))
-	assert.False(t, Equals(Value{Coins: num.Uint64(0)}, Value{Coins: num.Uint64(1)}))
-	assert.False(t, Equals(
-		Value{Coins: num.Uint64(1), Assets: map[AssetID]num.Int{"A": num.Uint64(10), "B": num.Uint64(0)}},
-		Value{Coins: num.Uint64(1)},
-	))
-	assert.False(t, Equals(
-		Value{Coins: num.Uint64(1), Assets: map[AssetID]num.Int{"A": num.Uint64(10), "B": num.Uint64(10)}},
-		Value{Coins: num.Uint64(1), Assets: map[AssetID]num.Int{"A": num.Uint64(10), "B": num.Uint64(15)}},
-	))
-}

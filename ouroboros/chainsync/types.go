@@ -782,21 +782,3 @@ func ReconstructDatums(metadatum OgmiosMetadatum) (map[string][]byte, error) {
 	}
 	return newDatums, nil
 }
-func Equals(left Value, right Value) bool {
-	if left.Coins.String() != right.Coins.String() {
-		return false
-	}
-	for k, v := range left.Assets {
-		lv := v.Uint64()
-		if lv != 0 && right.Assets[k].Uint64() != lv {
-			return false
-		}
-	}
-	for k, v := range right.Assets {
-		rv := v.Uint64()
-		if rv != 0 && left.Assets[k].Uint64() != rv {
-			return false
-		}
-	}
-	return true
-}
