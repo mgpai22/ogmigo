@@ -1,6 +1,8 @@
 module blah
 
-go 1.19
+go 1.23.0
+
+toolchain go1.23.7
 
 replace github.com/SundaeSwap-finance/ogmigo/store/badgerstore => ../../store/badgerstore
 
