@@ -16,13 +16,16 @@ package ogmigo
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
 	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/chainsync"
+	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/chainsync/num"
 	v5 "github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/chainsync/v5"
 	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/shared"
 	"github.com/SundaeSwap-finance/ogmigo/v6/ouroboros/statequery"
+	"github.com/btcsuite/btcutil/bech32"
 )
 
 func (c *Client) ChainTip(ctx context.Context) (chainsync.Point, error) {
@@ -216,4 +219,64 @@ func (c *Client) UtxosByTxIn(ctx context.Context, txIns ...chainsync.TxInQuery) 
 	}
 
 	return content.Result, nil
+}
+
+type Delegation struct {
+	PoolID  string  `json:"poolId"`
+	Rewards num.Int `json:"rewards"`
+}
+
+type delegateInfo struct {
+	ID string `json:"id"`
+}
+
+type rewardAccountSummary struct {
+	Delegate *delegateInfo `json:"delegate,omitempty"`
+	Rewards  *shared.Value `json:"rewards,omitempty"`
+	Deposit  *shared.Value `json:"deposit,omitempty"`
+}
+
+func (c *Client) GetDelegation(ctx context.Context, rewardAddress string) (Delegation, error) {
+
+	_, data, err := bech32.Decode(rewardAddress)
+	if err != nil {
+		return Delegation{}, fmt.Errorf("failed to decode reward address: %w", err)
+	}
+
+	decoded_value, _ := bech32.ConvertBits(data, 5, 8, false)
+
+	rewardAddressVfk := hex.EncodeToString(decoded_value[1:])
+
+	var (
+		payload = makePayload("queryLedgerState/rewardAccountSummaries", Map{"keys": []string{rewardAddress}}, nil)
+		content struct {
+			Result map[string]*rewardAccountSummary
+		}
+	)
+
+	if err := c.query(ctx, payload, &content); err != nil {
+		return Delegation{}, fmt.Errorf("failed to query reward account summaries: %w", err)
+	}
+
+	summary, ok := content.Result[rewardAddressVfk]
+	if !ok || summary == nil {
+		if !ok {
+			return Delegation{Rewards: num.Int64(0)}, fmt.Errorf("reward account not found for reward address vfk: %s", rewardAddressVfk)
+		}
+		return Delegation{Rewards: num.Int64(0)}, fmt.Errorf("query returned nil reward account for reward address: %s", rewardAddress)
+	}
+
+	delegation := Delegation{
+		Rewards: num.Int64(0),
+	}
+
+	if summary.Delegate != nil && summary.Delegate.ID != "" {
+		delegation.PoolID = summary.Delegate.ID
+	}
+
+	if summary.Rewards != nil {
+		delegation.Rewards = summary.Rewards.AdaLovelace()
+	}
+
+	return delegation, nil
 }
