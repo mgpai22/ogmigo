@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/SundaeSwap-finance/ogmigo/v6"
@@ -39,7 +40,7 @@ func main() {
 	flag.Parse()
 	ctx := context.Background()
 
-	ogmios_addr := "ws://100.72.33.61:1339"
+	ogmios_addr := os.Getenv("OGMIOS") // "ws://100.72.33.61:1339"
 	my_client := ogmigo.New(ogmigo.WithEndpoint(ogmios_addr))
 	closer, err := my_client.ChainSync(ctx, callback)
 	if err != nil {

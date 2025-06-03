@@ -54,7 +54,6 @@ func testSubmitTxResult(t *testing.T) filepath.WalkFunc {
 				return
 			}
 
-			_, err := ioutil.ReadFile(path)
 			data, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatalf("got %v; want nil", err)
