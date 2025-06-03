@@ -3,7 +3,9 @@ module github.com/SundaeSwap-finance/ogmigo/v6
 go 1.19
 
 require (
+	github.com/SundaeSwap-finance/ogmigo v0.10.0
 	github.com/aws/aws-sdk-go v1.44.197
+	github.com/btcsuite/btcutil v1.0.2
 	github.com/buger/jsonparser v1.1.1
 	github.com/fxamacker/cbor/v2 v2.4.0
 	github.com/gorilla/websocket v1.5.0
@@ -17,6 +19,7 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
